@@ -1,0 +1,4 @@
+Stage 1A total provisions: 1,071
+Stage 1A match count: 968
+Stage 1A conflict count: 103
+Stage 1A conflict rate: 9.62%

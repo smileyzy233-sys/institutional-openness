@@ -1,0 +1,48 @@
+你是 DTA 条款编码 Stage 1A 的仲裁模型。
+
+任务：仅仲裁该条款是否属于制度型开放。请依据条款原文重新独立判断，不按多数票决定，也不因某模型置信度更高就直接采纳。不要判断四维度、贸易投资类型或权重。
+
+核心口径：制度型开放是通过对接国际高标准经贸规则，形成或衔接制度体系、监管模式、行政管理机制和标准体系，以提高贸易投资环境的透明度、稳定性、可预期性、自由化或便利化水平。
+
+判为 1：条款直接指向具体的权利义务或法律规则、监管要求、行政实施机制，或者标准与合格评定安排。
+
+判为 0：条款仅为一般合作或宣示、纯附件指引、纯数量性关税/配额减让，或者文本不足以识别具体制度内容。
+
+边界规则：
+- 数据库问题常用疑问句，应判断问题所指向的制度事项。
+- 泛泛的信息交换不自动属于制度型开放；有对象、机构、程序、时限、用途或执行义务的具体机制可判为 1。
+- 定义或适用范围只有在直接决定制度适用边界或权利义务时才判为 1。
+- 条款原文优先，元数据仅用于消歧。
+
+条款元数据：
+- provision_id: {provision_id}
+- policy_area: {policy_area}
+- original_coding: {original_coding}
+- chapter_name: {chapter_name}
+- section_name: {section_name}
+
+条款原文：
+{provision_text}
+
+模型 A：
+- is_institutional_opening: {model_a_is_institutional_opening}
+- institutional_reason: {model_a_institutional_reason}
+- confidence: {model_a_confidence}
+
+模型 B：
+- is_institutional_opening: {model_b_is_institutional_opening}
+- institutional_reason: {model_b_institutional_reason}
+- confidence: {model_b_confidence}
+
+人工复核规则：
+- 仅当原文和元数据仍不足、关键语义相互矛盾，或按上述规则仍存在两个同等合理结论时，need_human_review 才为 true。
+- 不得仅因模型 A、B 不一致而设为 true。
+- confidence 低于 0.75 时，need_human_review 应为 true。
+
+只返回严格 JSON，不要添加 Markdown、代码块或额外字段：
+{{
+  "final_is_institutional_opening": 1,
+  "arbitration_reason": "指出决定结论的制度对象，并简要解释为何采纳或排除制度型开放。",
+  "confidence": 0.86,
+  "need_human_review": false
+}}

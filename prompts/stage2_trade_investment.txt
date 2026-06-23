@@ -1,0 +1,40 @@
+你正在为一条 DTA 条款进行阶段 2 编码。该条款已经在阶段 1 被最终判定为制度型开放。
+
+任务：
+判断该条款与制度型贸易开放、跨境投资制度型开放之间的直接影响关系。
+
+字段名和枚举值是程序接口，必须严格使用下列英文标识，不要翻译或改写。
+
+impact_type 允许值：
+- mp: 仅属于制度型贸易开放
+- tr: 仅属于跨境投资制度型开放
+- both: 同时属于制度型贸易开放和跨境投资制度型开放
+- none: 属于制度型开放，但与制度型贸易开放或跨境投资制度型开放没有直接关系
+
+重要规则：
+- tr 表示跨境投资制度型开放，不要把 tr 理解为 trade。
+- none 不等于非制度型开放；本条款已经通过阶段 1，被判定为制度型开放。
+- 如果 impact_type 为 mp，返回 trade_weight 1.0、investment_weight 0.0。
+- 如果 impact_type 为 tr，返回 trade_weight 0.0、investment_weight 1.0。
+- 如果 impact_type 为 none，返回 trade_weight 0.0、investment_weight 0.0。
+- 如果 impact_type 为 both，trade_weight 和 investment_weight 都必须严格大于 0 且小于 1，并且二者之和必须为 1。
+
+条款元数据：
+- provision_id: {provision_id}
+- policy_area: {policy_area}
+- original_coding: {original_coding}
+- chapter_name: {chapter_name}
+- section_name: {section_name}
+- final_dominant_dimension: {final_dominant_dimension}
+
+条款原文：
+{provision_text}
+
+只返回严格 JSON，不要添加 Markdown、解释或代码块：
+{{
+  "impact_type": "both",
+  "trade_weight": 0.65,
+  "investment_weight": 0.35,
+  "reason": "...",
+  "confidence": 0.82
+}}

@@ -1,0 +1,51 @@
+你是阶段 2 DTA 条款编码的仲裁模型。
+
+该条款已经在阶段 1 被最终判定为制度型开放。你的任务是决定最终 impact type。请基于条款原文、阶段 1 的最终维度，以及模型 A 和模型 B 各自独立给出的阶段 2 判断，重新独立判断类型。
+
+字段名和枚举值是程序接口，必须严格使用下列英文标识，不要翻译或改写。
+
+final_impact_type 允许值：
+- mp: 仅属于制度型贸易开放
+- tr: 仅属于跨境投资制度型开放
+- both: 同时属于制度型贸易开放和跨境投资制度型开放
+- none: 属于制度型开放，但与制度型贸易开放或跨境投资制度型开放没有直接关系
+
+重要规则：
+- tr 表示跨境投资制度型开放，不要把 tr 理解为 trade。
+- 如果 final_impact_type 为 mp，程序会强制权重为 1.0 和 0.0。
+- 如果 final_impact_type 为 tr，程序会强制权重为 0.0 和 1.0。
+- 如果 final_impact_type 为 none，程序会强制权重为 0.0 和 0.0。
+- 如果 final_impact_type 为 both，必须提供严格大于 0 且小于 1、并且加总为 1 的最终权重。
+
+条款元数据：
+- provision_id: {provision_id}
+- policy_area: {policy_area}
+- original_coding: {original_coding}
+- chapter_name: {chapter_name}
+- section_name: {section_name}
+- final_dominant_dimension: {final_dominant_dimension}
+
+条款原文：
+{provision_text}
+
+模型 A：
+- impact_type: {model_a_impact_type}
+- trade_weight: {model_a_trade_weight}
+- investment_weight: {model_a_investment_weight}
+- reason: {model_a_reason}
+
+模型 B：
+- impact_type: {model_b_impact_type}
+- trade_weight: {model_b_trade_weight}
+- investment_weight: {model_b_investment_weight}
+- reason: {model_b_reason}
+
+只返回严格 JSON，不要添加 Markdown、解释或代码块：
+{{
+  "final_impact_type": "both",
+  "final_trade_weight": 0.6,
+  "final_investment_weight": 0.4,
+  "arbitration_reason": "...",
+  "confidence": 0.83,
+  "need_human_review": false
+}}

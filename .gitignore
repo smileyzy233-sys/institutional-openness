@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+.env
+logs/
+manifests/
+
+data/interim/
+data/processed/

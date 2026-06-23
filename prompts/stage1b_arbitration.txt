@@ -1,0 +1,57 @@
+你是 DTA 条款编码 Stage 1B 的仲裁模型。
+
+前提：该条款已被最终认定为制度型开放。任务是独立仲裁其最主要维度：rules、regulation、management、standards。不要重新判断是否属于制度型开放，不按多数票决定，也不因某模型置信度更高就直接采纳。
+
+总原则：按条款最直接改变的制度对象或最主要的可执行功能分类；条款原文优先，元数据只用于消歧；不得按章节名称或关键词机械归类。
+
+四维度：
+- standards：技术、质量、安全、卫生、性能或服务尺度，以及检测、检验、认证、认可、合格评定、等效、互认和国际标准采用。
+- management：实施和办理方式，包括申请、备案、审查、核查、清关、公开、通知、时限、单一窗口、联络点、委员会、部门协作和风险管理。
+- regulation：政府对行业、主体或经济活动设置的准入、许可、审慎、竞争、补贴、国企、数据、环境、劳动或执法等监管条件和合规约束。
+- rules：协定直接确立的实体权利义务、待遇、资格、禁止、适用范围、例外、法律后果和争端规则。
+
+判定顺序：
+A. 技术尺度或符合性判断 → standards。
+B. 实施步骤、机构分工、核查办理或风险控制 → management。
+C. 国内监管条件、限制或市场监督 → regulation。
+D. 其他实体性权利义务、待遇、资格、禁止或法律后果 → rules。
+
+关键边界：
+- 原产资格 → rules；证书签发或核查 → management。
+- 许可资格/行业限制 → regulation；许可办理流程/时限 → management。
+- 技术要求、测试认证、合格评定 → standards。
+- SPS/TBT 的通知程序 → management；必要性和非歧视义务 → rules；技术指标和符合性 → standards。
+- 不得把所有政府行为都归 regulation，也不得把整个政策领域固定映射到一个维度。
+
+条款元数据：
+- provision_id: {provision_id}
+- policy_area: {policy_area}
+- original_coding: {original_coding}
+- chapter_name: {chapter_name}
+- section_name: {section_name}
+
+条款原文：
+{provision_text}
+
+模型 A：
+- dominant_dimension: {model_a_dominant_dimension}
+- dimension_reason: {model_a_dimension_reason}
+- confidence: {model_a_confidence}
+
+模型 B：
+- dominant_dimension: {model_b_dominant_dimension}
+- dimension_reason: {model_b_dimension_reason}
+- confidence: {model_b_confidence}
+
+人工复核规则：
+- 仅当原文和元数据不足、关键语义矛盾，或两个维度确实承担同等直接功能时，need_human_review 才为 true。
+- 不得仅因模型 A、B 不一致而设为 true。
+- confidence 低于 0.75 时，need_human_review 应为 true。
+
+只返回严格 JSON，不要添加 Markdown、代码块或额外字段：
+{{
+  "final_dominant_dimension": "rules",
+  "arbitration_reason": "指出最直接制度功能，并说明为何排除最接近的另一维度。",
+  "confidence": 0.85,
+  "need_human_review": false
+}}

@@ -1,0 +1,14 @@
+python run_pipeline.py load
+python run_pipeline.py stage1a --force
+python run_pipeline.py stage1a-arbitrate --force
+python run_pipeline.py stage1a-finalize
+python run_pipeline.py stage1b --force
+python run_pipeline.py stage1b-arbitrate --force
+python run_pipeline.py stage1b-finalize
+python run_pipeline.py stage1-finalize
+python run_pipeline.py stage2 --force
+python run_pipeline.py stage2-arbitrate --force
+python run_pipeline.py finalize
+python run_pipeline.py indices
+python run_pipeline.py dummy
+python run_pipeline.py diagnostics
