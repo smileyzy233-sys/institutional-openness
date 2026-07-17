@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+
+  <defs>
+    <marker id="arrow-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+    </marker>
+    <marker id="arrow-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+
+  <style>
+    :root {
+      --font-sans: "Inter", "Arial", "Helvetica", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      --font-serif: "Georgia", "Times New Roman", "Noto Serif CJK SC", serif;
+      --font-hand: "Comic Sans MS", "Comic Neue", "Arial Rounded MT Bold", "Microsoft YaHei", sans-serif;
+    }
+  </style>
+  <rect id="canvas-background" x="0" y="0" width="1600" height="900" fill="#F7F8FA"/>
+  <g id="background">
+    <rect id="canvas-bg" x="0" y="0" width="1600" height="900" rx="0" ry="0" fill="#F7F8FA" stroke="none" stroke-width="0"/>
+    <rect id="data-lane" x="50" y="145" width="200" height="565" rx="18" ry="18" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="1.5"/>
+    <rect id="stage1-lane" x="270" y="145" width="420" height="565" rx="18" ry="18" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="1.5"/>
+    <rect id="stage2-lane" x="710" y="145" width="560" height="565" rx="18" ry="18" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="1.5"/>
+    <rect id="output-lane" x="1290" y="145" width="260" height="565" rx="18" ry="18" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="1.5"/>
+    <rect id="legend-band" x="50" y="736" width="1500" height="118" rx="16" ry="16" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="1.5"/>
+  </g>
+  <g id="panels">
+    <line id="title-rule" x1="56" y1="122" x2="1544" y2="122" stroke="#D0D5DD" stroke-width="1.5" />
+    <rect id="data-header" x="50" y="145" width="200" height="48" rx="18" ry="18" fill="#E9EEF5" stroke="none" stroke-width="0"/>
+    <rect id="data-header-square" x="50" y="175" width="200" height="18" rx="0" ry="0" fill="#E9EEF5" stroke="none" stroke-width="0"/>
+    <rect id="stage1-header" x="270" y="145" width="420" height="48" rx="18" ry="18" fill="#EAF2FB" stroke="none" stroke-width="0"/>
+    <rect id="stage1-header-square" x="270" y="175" width="420" height="18" rx="0" ry="0" fill="#EAF2FB" stroke="none" stroke-width="0"/>
+    <rect id="stage2-header" x="710" y="145" width="560" height="48" rx="18" ry="18" fill="#EAF6F2" stroke="none" stroke-width="0"/>
+    <rect id="stage2-header-square" x="710" y="175" width="560" height="18" rx="0" ry="0" fill="#EAF6F2" stroke="none" stroke-width="0"/>
+    <rect id="output-header" x="1290" y="145" width="260" height="48" rx="18" ry="18" fill="#F1EFF8" stroke="none" stroke-width="0"/>
+    <rect id="output-header-square" x="1290" y="175" width="260" height="18" rx="0" ry="0" fill="#F1EFF8" stroke="none" stroke-width="0"/>
+  </g>
+  <g id="sections">
+    <rect id="raw-box" x="75" y="206" width="150" height="80" rx="14" ry="14" fill="#F2F4F7" stroke="#475467" stroke-width="2.2"/>
+    <rect id="clean-box" x="75" y="326" width="150" height="95" rx="14" ry="14" fill="#FFFFFF" stroke="#475467" stroke-width="2.2"/>
+    <rect id="matrix-box" x="75" y="461" width="150" height="94" rx="14" ry="14" fill="#FFFFFF" stroke="#475467" stroke-width="2.2"/>
+    <rect id="s1a-box" x="292" y="202" width="170" height="78" rx="14" ry="14" fill="#EAF2FB" stroke="#3778A6" stroke-width="2.2"/>
+    <rect id="s1a-review-box" x="510" y="202" width="160" height="78" rx="14" ry="14" fill="#FFF3D8" stroke="#A46A10" stroke-width="2.2"/>
+    <rect id="non-inst-box" x="292" y="318" width="170" height="70" rx="14" ry="14" fill="#F2F4F7" stroke="#475467" stroke-width="2.2"/>
+    <rect id="inst-box" x="510" y="318" width="160" height="70" rx="14" ry="14" fill="#EAF2FB" stroke="#3778A6" stroke-width="2.2"/>
+    <rect id="s1b-box" x="292" y="440" width="170" height="90" rx="14" ry="14" fill="#EAF2FB" stroke="#3778A6" stroke-width="2.2"/>
+    <rect id="s1b-review-box" x="510" y="440" width="160" height="90" rx="14" ry="14" fill="#FFF3D8" stroke="#A46A10" stroke-width="2.2"/>
+    <rect id="s1-final-box" x="390" y="592" width="180" height="76" rx="14" ry="14" fill="#FFFFFF" stroke="#3778A6" stroke-width="2.2"/>
+    <rect id="s2-sample-box" x="732" y="202" width="176" height="75" rx="14" ry="14" fill="#EAF6F2" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="model-a-box" x="732" y="318" width="176" height="80" rx="14" ry="14" fill="#FFFFFF" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="model-b-box" x="732" y="458" width="176" height="80" rx="14" ry="14" fill="#FFFFFF" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="compare-box" x="952" y="386" width="150" height="96" rx="14" ry="14" fill="#EAF6F2" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="consensus-box" x="1132" y="290" width="126" height="75" rx="14" ry="14" fill="#EAF6F2" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="conflict-box" x="1132" y="487" width="126" height="75" rx="14" ry="14" fill="#FFF3D8" stroke="#A46A10" stroke-width="2.2"/>
+    <rect id="trace-box" x="732" y="610" width="176" height="68" rx="14" ry="14" fill="#FFFFFF" stroke="#475467" stroke-width="2.2"/>
+    <rect id="s2-final-box" x="980" y="592" width="180" height="76" rx="14" ry="14" fill="#FFFFFF" stroke="#2E7D6B" stroke-width="2.2"/>
+    <rect id="out-provision-box" x="1312" y="238" width="216" height="84" rx="14" ry="14" fill="#F1EFF8" stroke="#6D5BA6" stroke-width="2.2"/>
+    <rect id="out-agreement-box" x="1312" y="385" width="216" height="92" rx="14" ry="14" fill="#FFFFFF" stroke="#6D5BA6" stroke-width="2.2"/>
+    <rect id="out-panel-box" x="1312" y="540" width="216" height="100" rx="14" ry="14" fill="#FFFFFF" stroke="#6D5BA6" stroke-width="2.2"/>
+  </g>
+  <g id="connectors">
+    <path id="a-data-1" d="M150 286 L150 326" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-data-2" d="M150 421 L150 461" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-data-stage1" d="M225 508 L258 508 L258 235 L292 235" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1a-review" d="M462 235 L510 235" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1a-positive" d="M590 280 L590 318" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1a-negative" d="M510 253 L480 253 L480 353 L462 353" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-positive-s1b" d="M590 388 L590 420 L377 420 L377 440" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1b-review" d="M462 485 L510 485" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1b-final" d="M590 530 L590 560 L480 560 L480 592" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s1-stage2" d="M570 630 L700 630 L700 235 L732 235" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s2-model-a" d="M820 277 L820 318" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-s2-model-b" d="M820 277 L718 277 L718 458 L732 458" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-model-a-compare" d="M908 358 L930 358 L930 420 L952 420" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-model-b-compare" d="M908 498 L930 498 L930 452 L952 452" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-compare-consensus" d="M1102 420 L1120 420 L1120 328 L1132 328" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-compare-conflict" d="M1102 452 L1120 452 L1120 525 L1132 525" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-consensus-final" d="M1195 365 L1195 575 L1070 575 L1070 592" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-conflict-final" d="M1195 562 L1195 575 L1070 575 L1070 592" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-trace-conflict" d="M908 644 L1110 644 L1110 548 L1132 548" fill="none" stroke="#475467" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow-end)"/>
+    <path id="a-final-output" d="M1160 630 L1280 630 L1280 280 L1312 280" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-output-1" d="M1420 322 L1420 385" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+    <path id="a-output-2" d="M1420 477 L1420 540" fill="none" stroke="#475467" stroke-width="2.5" marker-end="url(#arrow-end)"/>
+  </g>
+  <g id="texts">
+    <text id="title" x="56" y="58" font-family="Microsoft YaHei" font-size="44" font-weight="700" fill="#182230" text-anchor="start"><tspan x="56" dy="0">DTA 制度型开放条款编码与指标构建流程</tspan></text>
+    <text id="subtitle" x="56" y="98" font-family="Microsoft YaHei" font-size="20" font-weight="400" fill="#667085" text-anchor="start"><tspan x="56" dy="0">当前正式口径：Stage 1 双模型识别与仲裁；Stage 2 双模型交叉验证与冲突仲裁</tspan></text>
+    <text id="data-header-text" x="68" y="176" font-family="Microsoft YaHei" font-size="19" font-weight="700" fill="#182230" text-anchor="start"><tspan x="68" dy="0">01  数据准备</tspan></text>
+    <text id="stage1-header-text" x="288" y="176" font-family="Microsoft YaHei" font-size="19" font-weight="700" fill="#182230" text-anchor="start"><tspan x="288" dy="0">02  Stage 1｜制度型开放识别</tspan></text>
+    <text id="stage2-header-text" x="728" y="176" font-family="Microsoft YaHei" font-size="19" font-weight="700" fill="#182230" text-anchor="start"><tspan x="728" dy="0">03  Stage 2｜贸易/投资影响识别</tspan></text>
+    <text id="output-header-text" x="1308" y="176" font-family="Microsoft YaHei" font-size="19" font-weight="700" fill="#182230" text-anchor="start"><tspan x="1308" dy="0">04  指标输出</tspan></text>
+    <text id="raw-text" x="150" y="240.015" font-family="Microsoft YaHei" font-size="21" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="150" dy="0">DTA 2.0</tspan><tspan x="150" dy="26.25">条款原始表</tspan></text>
+    <text id="clean-text" x="150" y="367.8" font-family="Microsoft YaHei" font-size="20" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="150" dy="0">条款清洗</tspan><tspan x="150" dy="25.0">唯一 ID 构造</tspan></text>
+    <text id="matrix-text" x="150" y="502.3" font-family="Microsoft YaHei" font-size="20" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="150" dy="0">协定—条款</tspan><tspan x="150" dy="25.0">矩阵</tspan></text>
+    <text id="data-note" x="150" y="600" font-family="Microsoft YaHei" font-size="17" font-weight="400" fill="#667085" text-anchor="middle"><tspan x="150" dy="0">统一条款粒度</tspan><tspan x="150" dy="21.25">保留来源字段与文本</tspan></text>
+    <text id="s1a-text" x="377" y="224.62" font-family="Microsoft YaHei" font-size="18" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="377" dy="0">1A 双模型判定</tspan><tspan x="377" dy="22.5">制度型开放？</tspan><tspan x="377" dy="22.5">样本 1,071 条</tspan></text>
+    <text id="s1a-review-text" x="590" y="225.53" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="590" dy="0">比较与仲裁</tspan><tspan x="590" dy="21.25">冲突 103 条</tspan><tspan x="590" dy="21.25">冲突率 9.62%</tspan></text>
+    <text id="non-inst-text" x="377" y="337.53" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="377" dy="0">非制度型开放</tspan><tspan x="377" dy="21.25">307 条</tspan><tspan x="377" dy="21.25">→ not_applicable</tspan></text>
+    <text id="inst-text" x="590" y="337.53" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="590" dy="0">制度型开放</tspan><tspan x="590" dy="21.25">764 条</tspan><tspan x="590" dy="21.25">进入 Stage 1B / 2</tspan></text>
+    <text id="s1b-text" x="377" y="458.905" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="377" dy="0">1B 双模型判定</tspan><tspan x="377" dy="21.25">四类制度维度</tspan><tspan x="377" dy="21.25">规则·规制</tspan><tspan x="377" dy="21.25">管理·标准</tspan></text>
+    <text id="s1b-review-text" x="590" y="460.44" font-family="Microsoft YaHei" font-size="16" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="590" dy="0">比较与仲裁</tspan><tspan x="590" dy="20.0">冲突 109 条</tspan><tspan x="590" dy="20.0">分母：764</tspan><tspan x="590" dy="20.0">冲突率 14.27%</tspan></text>
+    <text id="s1-final-text" x="480" y="624.87" font-family="Microsoft YaHei" font-size="18" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="480" dy="0">Stage 1 最终结果</tspan><tspan x="480" dy="22.5">条款属性 + 制度维度</tspan></text>
+    <text id="s2-sample-text" x="820" y="223.12" font-family="Microsoft YaHei" font-size="18" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="820" dy="0">Stage 2 样本</tspan><tspan x="820" dy="22.5">制度型开放条款</tspan><tspan x="820" dy="22.5">764 条</tspan></text>
+    <text id="model-a-text" x="820" y="353.44" font-family="Microsoft YaHei" font-size="16" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="820" dy="0">模型 A 独立编码</tspan><tspan x="820" dy="20.0">mp / tr / both / none</tspan></text>
+    <text id="model-b-text" x="820" y="493.44" font-family="Microsoft YaHei" font-size="16" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="820" dy="0">模型 B 独立编码</tspan><tspan x="820" dy="20.0">mp / tr / both / none</tspan></text>
+    <text id="compare-text" x="1027" y="418.53" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1027" dy="0">一致性比较</tspan><tspan x="1027" dy="21.25">仅按影响类型</tspan><tspan x="1027" dy="21.25">核验权重规则</tspan></text>
+    <text id="consensus-text" x="1195" y="312.03" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1195" dy="0">一致样本</tspan><tspan x="1195" dy="21.25">直接接受</tspan><tspan x="1195" dy="21.25">682 条</tspan></text>
+    <text id="conflict-text" x="1195" y="509.03" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1195" dy="0">冲突样本</tspan><tspan x="1195" dy="21.25">盲审/仲裁</tspan><tspan x="1195" dy="21.25">82 条</tspan></text>
+    <text id="trace-text" x="820" y="630.35" font-family="Microsoft YaHei" font-size="15" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="820" dy="0">可追溯记录</tspan><tspan x="820" dy="18.75">prompt / hash</tspan><tspan x="820" dy="18.75">run_id</tspan></text>
+    <text id="s2-final-text" x="1070" y="625.155" font-family="Microsoft YaHei" font-size="17" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1070" dy="0">最终影响类型与权重</tspan><tspan x="1070" dy="21.25">贸易权重 / 投资权重</tspan></text>
+    <text id="out-provision-text" x="1420" y="274.3" font-family="Microsoft YaHei" font-size="20" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1420" dy="0">条款层面</tspan><tspan x="1420" dy="25.0">贸易/投资权重</tspan></text>
+    <text id="out-agreement-text" x="1420" y="425.3" font-family="Microsoft YaHei" font-size="20" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1420" dy="0">协定层面指数</tspan><tspan x="1420" dy="25.0">400 份协定</tspan></text>
+    <text id="out-panel-text" x="1420" y="573.62" font-family="Microsoft YaHei" font-size="18" font-weight="600" fill="#182230" text-anchor="middle"><tspan x="1420" dy="0">国家对—年份面板</tspan><tspan x="1420" dy="22.5">指标 / 生效 dummy</tspan><tspan x="1420" dy="22.5">及理想点距离</tspan></text>
+    <text id="output-note" x="1420" y="680" font-family="Microsoft YaHei" font-size="16" font-weight="400" fill="#667085" text-anchor="middle"><tspan x="1420" dy="0">最终全期表：1958—2023</tspan><tspan x="1420" dy="20.0">76 个经济体</tspan></text>
+    <text id="legend-title" x="76" y="770" font-family="Microsoft YaHei" font-size="20" font-weight="700" fill="#182230" text-anchor="start"><tspan x="76" dy="0">影响类型与进入条件</tspan></text>
+    <text id="legend-line-1" x="76" y="806" font-family="Microsoft YaHei" font-size="17" font-weight="400" fill="#182230" text-anchor="start"><tspan x="76" dy="0">mp：仅直接作用于贸易；tr：仅直接作用于跨境投资；both：两条渠道均存在，权重均大于 0 且合计为 1。</tspan></text>
+    <text id="legend-line-2" x="76" y="836" font-family="Microsoft YaHei" font-size="17" font-weight="400" fill="#667085" text-anchor="start"><tspan x="76" dy="0">none：已进入 Stage 2，但无直接贸易/投资影响；not_applicable：Stage 1 判定为非制度型开放，未进入 Stage 2。</tspan></text>
+  </g>
+</svg>

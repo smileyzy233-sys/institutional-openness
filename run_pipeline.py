@@ -28,6 +28,7 @@ COMMANDS = {
     "stage2",
     "stage2-arbitrate",
     "finalize",
+    "finalize-single-stage2",
     "indices",
     "dummy",
     "diagnostics",
@@ -194,6 +195,10 @@ def run_command(command: str, args: argparse.Namespace) -> None:
         run_stage2_arbitration(args)
     elif command == "finalize":
         load_script("10_finalize_weights.py").run(allow_unresolved=False)
+    elif command == "finalize-single-stage2":
+        load_script("10_finalize_weights_single_stage2_model.py").run(
+            model_role=args.model_role or "B"
+        )
     elif command == "indices":
         load_script("11_compute_agreement_indices.py").run()
         load_script("12_compute_country_pair_indices.py").run(method=args.multi_agreement_method)

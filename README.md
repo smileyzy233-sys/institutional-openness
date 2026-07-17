@@ -160,11 +160,11 @@ data/processed/final_provision_weights.csv
 data/processed/agreement_level_indices.csv
 data/processed/country_pair_year_indices.csv
 data/processed/dta_active_agreement_dummy_all_dta_pair_year.csv
-data/processed/trade_agreement_dummy_icio_economies_all_years_pair_year.csv
-data/processed/trade_agreement_dummy_icio2019_pair_year.csv
-data/processed/trade_agreement_dummy_expanded_union_pair_year.csv
-data/processed/trade_agreement_dummy_diagnostics.csv
-data/processed/trade_agreement_dummy_code_mismatch_report.csv
+data/processed/trade_dummy_icio_all_years.csv
+data/processed/trade_dummy_icio2019.csv
+data/processed/trade_dummy_union_panel.csv
+data/processed/trade_dummy_diagnostics.csv
+data/processed/trade_dummy_code_mismatch.csv
 data/processed/diagnostics_summary.csv
 ```
 

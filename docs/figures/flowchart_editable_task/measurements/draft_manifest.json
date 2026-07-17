@@ -1,0 +1,81 @@
+{
+  "project": "measurements",
+  "source_image": "A:\\桌面\\制度性开放\\dta_institutional_opening\\docs\\figures\\flowchart_editable_task\\work\\flowchart-page-1.png",
+  "working_source_image": "A:\\桌面\\制度性开放\\dta_institutional_opening\\docs\\figures\\flowchart_editable_task\\measurements\\assets\\source.png",
+  "canvas": {
+    "width": 1249,
+    "height": 734,
+    "background": "#ffffff"
+  },
+  "classification": {
+    "layout_topology": "model-to-classify",
+    "complexity": "model-to-classify",
+    "style_type": "image-derived",
+    "reconstruction_mode": "model-led-hybrid",
+    "reconstruction_intent": "Use OCR/CV measurements only as evidence; model must author semantic manifest."
+  },
+  "assets": [],
+  "elements": [],
+  "style_tokens": {
+    "background": "#ffffff",
+    "dominant_colors": [
+      {
+        "color": "#f0f0f0",
+        "count": 10700
+      },
+      {
+        "color": "#e0e0e0",
+        "count": 920
+      },
+      {
+        "color": "#d0d0d0",
+        "count": 814
+      },
+      {
+        "color": "#c0c0c0",
+        "count": 311
+      },
+      {
+        "color": "#b0b0b0",
+        "count": 210
+      },
+      {
+        "color": "#e0f0f0",
+        "count": 173
+      },
+      {
+        "color": "#a0a0a0",
+        "count": 155
+      },
+      {
+        "color": "#909090",
+        "count": 98
+      },
+      {
+        "color": "#d0d0e0",
+        "count": 85
+      },
+      {
+        "color": "#d0e0e0",
+        "count": 82
+      }
+    ],
+    "rect_styles": [],
+    "default_stroke": "#111111",
+    "default_text": "#111111",
+    "style_source": "pixel-sampling"
+  },
+  "diagnostics": {
+    "ocr_overlay": "diagnostics/ocr_overlay.png",
+    "structure_overlay": "diagnostics/structure_overlay.png",
+    "style_overlay": "diagnostics/style_overlay.png",
+    "ocr_status": "disabled",
+    "ocr_profile": null,
+    "opencv_status": "disabled"
+  },
+  "quality_gates": {
+    "semantic_manifest_required": {
+      "status": "review"
+    }
+  }
+}

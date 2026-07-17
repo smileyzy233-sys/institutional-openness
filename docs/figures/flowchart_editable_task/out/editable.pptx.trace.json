@@ -1,0 +1,1557 @@
+{
+  "output": "A:\\桌面\\制度性开放\\dta_institutional_opening\\docs\\figures\\flowchart_editable_task\\out\\editable.pptx",
+  "slide_count": 1,
+  "slides": [
+    {
+      "slide_num": 1,
+      "svg": "C:\\Users\\杨镇宇\\AppData\\Local\\Temp\\i2svg_pptx_fbxv5sga\\svg_output\\01_editable.svg",
+      "summary": {
+        "converted": 6,
+        "skipped": 0,
+        "media_files": 0,
+        "relationships": 0,
+        "animation_targets": 4
+      },
+      "preprocess": [
+        {
+          "action": "flatten-positional-tspans",
+          "merge_paragraphs": false
+        }
+      ],
+      "events": [
+        {
+          "tag": "style",
+          "decision": "skip",
+          "reason": "non-visual"
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "canvas-background",
+          "shape_id": 2,
+          "bounds_emu": [
+            0,
+            0,
+            15240000,
+            8572500
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "canvas-bg",
+          "shape_id": 3,
+          "bounds_emu": [
+            0,
+            0,
+            15240000,
+            8572500
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "data-lane",
+          "shape_id": 4,
+          "bounds_emu": [
+            476250,
+            1381125,
+            2381250,
+            6762750
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage1-lane",
+          "shape_id": 5,
+          "bounds_emu": [
+            2571750,
+            1381125,
+            6572250,
+            6762750
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage2-lane",
+          "shape_id": 6,
+          "bounds_emu": [
+            6762750,
+            1381125,
+            12096750,
+            6762750
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "output-lane",
+          "shape_id": 7,
+          "bounds_emu": [
+            12287250,
+            1381125,
+            14763750,
+            6762750
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "legend-band",
+          "shape_id": 8,
+          "bounds_emu": [
+            476250,
+            7010400,
+            14763750,
+            8134350
+          ]
+        },
+        {
+          "tag": "g",
+          "decision": "native",
+          "id": "background",
+          "shape_id": 9,
+          "bounds_emu": [
+            0,
+            0,
+            15240000,
+            8572500
+          ]
+        },
+        {
+          "tag": "line",
+          "decision": "native",
+          "id": "title-rule",
+          "shape_id": 10,
+          "bounds_emu": [
+            533400,
+            1162050,
+            14706600,
+            1171575
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "data-header",
+          "shape_id": 11,
+          "bounds_emu": [
+            476250,
+            1381125,
+            2381250,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "data-header-square",
+          "shape_id": 12,
+          "bounds_emu": [
+            476250,
+            1666875,
+            2381250,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage1-header",
+          "shape_id": 13,
+          "bounds_emu": [
+            2571750,
+            1381125,
+            6572250,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage1-header-square",
+          "shape_id": 14,
+          "bounds_emu": [
+            2571750,
+            1666875,
+            6572250,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage2-header",
+          "shape_id": 15,
+          "bounds_emu": [
+            6762750,
+            1381125,
+            12096750,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "stage2-header-square",
+          "shape_id": 16,
+          "bounds_emu": [
+            6762750,
+            1666875,
+            12096750,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "output-header",
+          "shape_id": 17,
+          "bounds_emu": [
+            12287250,
+            1381125,
+            14763750,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "output-header-square",
+          "shape_id": 18,
+          "bounds_emu": [
+            12287250,
+            1666875,
+            14763750,
+            1838325
+          ]
+        },
+        {
+          "tag": "g",
+          "decision": "native",
+          "id": "panels",
+          "shape_id": 19,
+          "bounds_emu": [
+            476250,
+            1162050,
+            14763750,
+            1838325
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "raw-box",
+          "shape_id": 20,
+          "bounds_emu": [
+            714375,
+            1962150,
+            2143125,
+            2724150
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "clean-box",
+          "shape_id": 21,
+          "bounds_emu": [
+            714375,
+            3105150,
+            2143125,
+            4010025
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "matrix-box",
+          "shape_id": 22,
+          "bounds_emu": [
+            714375,
+            4391025,
+            2143125,
+            5286375
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s1a-box",
+          "shape_id": 23,
+          "bounds_emu": [
+            2781300,
+            1924050,
+            4400550,
+            2667000
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s1a-review-box",
+          "shape_id": 24,
+          "bounds_emu": [
+            4857750,
+            1924050,
+            6381750,
+            2667000
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "non-inst-box",
+          "shape_id": 25,
+          "bounds_emu": [
+            2781300,
+            3028950,
+            4400550,
+            3695700
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "inst-box",
+          "shape_id": 26,
+          "bounds_emu": [
+            4857750,
+            3028950,
+            6381750,
+            3695700
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s1b-box",
+          "shape_id": 27,
+          "bounds_emu": [
+            2781300,
+            4191000,
+            4400550,
+            5048250
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s1b-review-box",
+          "shape_id": 28,
+          "bounds_emu": [
+            4857750,
+            4191000,
+            6381750,
+            5048250
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s1-final-box",
+          "shape_id": 29,
+          "bounds_emu": [
+            3714750,
+            5638800,
+            5429250,
+            6362700
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s2-sample-box",
+          "shape_id": 30,
+          "bounds_emu": [
+            6972300,
+            1924050,
+            8648700,
+            2638425
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "model-a-box",
+          "shape_id": 31,
+          "bounds_emu": [
+            6972300,
+            3028950,
+            8648700,
+            3790950
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "model-b-box",
+          "shape_id": 32,
+          "bounds_emu": [
+            6972300,
+            4362450,
+            8648700,
+            5124450
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "compare-box",
+          "shape_id": 33,
+          "bounds_emu": [
+            9067800,
+            3676650,
+            10496550,
+            4591050
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "consensus-box",
+          "shape_id": 34,
+          "bounds_emu": [
+            10782300,
+            2762250,
+            11982450,
+            3476625
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "conflict-box",
+          "shape_id": 35,
+          "bounds_emu": [
+            10782300,
+            4638675,
+            11982450,
+            5353050
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "trace-box",
+          "shape_id": 36,
+          "bounds_emu": [
+            6972300,
+            5810250,
+            8648700,
+            6457950
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "s2-final-box",
+          "shape_id": 37,
+          "bounds_emu": [
+            9334500,
+            5638800,
+            11049000,
+            6362700
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "out-provision-box",
+          "shape_id": 38,
+          "bounds_emu": [
+            12496800,
+            2266950,
+            14554200,
+            3067050
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "out-agreement-box",
+          "shape_id": 39,
+          "bounds_emu": [
+            12496800,
+            3667125,
+            14554200,
+            4543425
+          ]
+        },
+        {
+          "tag": "rect",
+          "decision": "native",
+          "id": "out-panel-box",
+          "shape_id": 40,
+          "bounds_emu": [
+            12496800,
+            5143500,
+            14554200,
+            6096000
+          ]
+        },
+        {
+          "tag": "g",
+          "decision": "native",
+          "id": "sections",
+          "shape_id": 41,
+          "bounds_emu": [
+            714375,
+            1924050,
+            14554200,
+            6457950
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-data-1",
+          "shape_id": 42,
+          "bounds_emu": [
+            1428750,
+            2724150,
+            1438275,
+            3105150
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-data-2",
+          "shape_id": 43,
+          "bounds_emu": [
+            1428750,
+            4010025,
+            1438275,
+            4391025
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-data-stage1",
+          "shape_id": 44,
+          "bounds_emu": [
+            2143125,
+            2238375,
+            2781300,
+            4838700
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1a-review",
+          "shape_id": 45,
+          "bounds_emu": [
+            4400550,
+            2238375,
+            4857750,
+            2247900
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1a-positive",
+          "shape_id": 46,
+          "bounds_emu": [
+            5619750,
+            2667000,
+            5629275,
+            3028950
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1a-negative",
+          "shape_id": 47,
+          "bounds_emu": [
+            4400550,
+            2409825,
+            4857750,
+            3362325
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-positive-s1b",
+          "shape_id": 48,
+          "bounds_emu": [
+            3590925,
+            3695700,
+            5619750,
+            4191000
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1b-review",
+          "shape_id": 49,
+          "bounds_emu": [
+            4400550,
+            4619625,
+            4857750,
+            4629150
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1b-final",
+          "shape_id": 50,
+          "bounds_emu": [
+            4572000,
+            5048250,
+            5619750,
+            5638800
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s1-stage2",
+          "shape_id": 51,
+          "bounds_emu": [
+            5429250,
+            2238375,
+            6972300,
+            6000750
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s2-model-a",
+          "shape_id": 52,
+          "bounds_emu": [
+            7810500,
+            2638425,
+            7820025,
+            3028950
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-s2-model-b",
+          "shape_id": 53,
+          "bounds_emu": [
+            6838950,
+            2638425,
+            7810500,
+            4362450
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-model-a-compare",
+          "shape_id": 54,
+          "bounds_emu": [
+            8648700,
+            3409950,
+            9067800,
+            4000500
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-model-b-compare",
+          "shape_id": 55,
+          "bounds_emu": [
+            8648700,
+            4305300,
+            9067800,
+            4743450
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-compare-consensus",
+          "shape_id": 56,
+          "bounds_emu": [
+            10496550,
+            3124200,
+            10782300,
+            4000500
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-compare-conflict",
+          "shape_id": 57,
+          "bounds_emu": [
+            10496550,
+            4305300,
+            10782300,
+            5000625
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-consensus-final",
+          "shape_id": 58,
+          "bounds_emu": [
+            10191750,
+            3476625,
+            11382375,
+            5638800
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-conflict-final",
+          "shape_id": 59,
+          "bounds_emu": [
+            10191750,
+            5353050,
+            11382375,
+            5638800
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-trace-conflict",
+          "shape_id": 60,
+          "bounds_emu": [
+            8648700,
+            5219700,
+            10782300,
+            6134100
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-final-output",
+          "shape_id": 61,
+          "bounds_emu": [
+            11049000,
+            2667000,
+            12496800,
+            6000750
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-output-1",
+          "shape_id": 62,
+          "bounds_emu": [
+            13525500,
+            3067050,
+            13535025,
+            3667125
+          ]
+        },
+        {
+          "tag": "path",
+          "decision": "native",
+          "id": "a-output-2",
+          "shape_id": 63,
+          "bounds_emu": [
+            13525500,
+            4543425,
+            13535025,
+            5143500
+          ]
+        },
+        {
+          "tag": "g",
+          "decision": "native",
+          "id": "connectors",
+          "shape_id": 64,
+          "bounds_emu": [
+            1428750,
+            2238375,
+            13535025,
+            6134100
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 65,
+          "bounds_emu": [
+            491490,
+            196215,
+            8869247,
+            866775
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 66,
+          "bounds_emu": [
+            514350,
+            771525,
+            7663339,
+            1076325
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 67,
+          "bounds_emu": [
+            629602,
+            1522571,
+            1693350,
+            1812131
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 68,
+          "bounds_emu": [
+            2725102,
+            1522571,
+            5305240,
+            1812131
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 69,
+          "bounds_emu": [
+            6916102,
+            1522571,
+            9855385,
+            1812131
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 70,
+          "bounds_emu": [
+            12440602,
+            1522571,
+            13554232,
+            1812131
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 71,
+          "bounds_emu": [
+            1011798,
+            2116122,
+            1845702,
+            2436162
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 72,
+          "bounds_emu": [
+            857429,
+            2366153,
+            2000072,
+            2686193
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 73,
+          "bounds_emu": [
+            989648,
+            3341370,
+            1867853,
+            3646170
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 74,
+          "bounds_emu": [
+            837378,
+            3579495,
+            2020121,
+            3884295
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 75,
+          "bounds_emu": [
+            931890,
+            4622482,
+            1925609,
+            4927282
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 76,
+          "bounds_emu": [
+            1199674,
+            4860608,
+            1657826,
+            5165408
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 77,
+          "bounds_emu": [
+            902494,
+            5577364,
+            1955007,
+            5836444
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 78,
+          "bounds_emu": [
+            647462,
+            5779770,
+            2210038,
+            6038850
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 79,
+          "bounds_emu": [
+            2992532,
+            1993773,
+            4189317,
+            2268093
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 80,
+          "bounds_emu": [
+            3006709,
+            2208086,
+            4175141,
+            2482406
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 81,
+          "bounds_emu": [
+            3020886,
+            2422398,
+            4160964,
+            2696718
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 82,
+          "bounds_emu": [
+            5157252,
+            2010537,
+            6082249,
+            2269617
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 83,
+          "bounds_emu": [
+            5157252,
+            2212943,
+            6082249,
+            2472023
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 84,
+          "bounds_emu": [
+            5063528,
+            2415350,
+            6175973,
+            2674430
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 85,
+          "bounds_emu": [
+            3039166,
+            3077337,
+            4142685,
+            3336417
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 86,
+          "bounds_emu": [
+            3311412,
+            3279743,
+            3870438,
+            3538823
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 87,
+          "bounds_emu": [
+            2878495,
+            3482150,
+            4303354,
+            3741230
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 88,
+          "bounds_emu": [
+            5157252,
+            3077337,
+            6082249,
+            3336417
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 89,
+          "bounds_emu": [
+            5340237,
+            3279743,
+            5899263,
+            3538823
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 90,
+          "bounds_emu": [
+            4898394,
+            3482150,
+            6341105,
+            3741230
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 91,
+          "bounds_emu": [
+            3025776,
+            4233434,
+            4156073,
+            4492514
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 92,
+          "bounds_emu": [
+            3039166,
+            4435840,
+            4142685,
+            4694920
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 93,
+          "bounds_emu": [
+            3168594,
+            4638246,
+            4013256,
+            4897326
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 94,
+          "bounds_emu": [
+            3168594,
+            4840653,
+            4013256,
+            5099733
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 95,
+          "bounds_emu": [
+            5184458,
+            4256151,
+            6055043,
+            4499991
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 96,
+          "bounds_emu": [
+            5184458,
+            4446651,
+            6055043,
+            4690491
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 97,
+          "bounds_emu": [
+            5213861,
+            4637151,
+            6025639,
+            4880991
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 98,
+          "bounds_emu": [
+            5071043,
+            4827651,
+            6168456,
+            5071491
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 99,
+          "bounds_emu": [
+            3831840,
+            5806154,
+            5312161,
+            6080474
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 100,
+          "bounds_emu": [
+            3690072,
+            6020467,
+            5453928,
+            6294787
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 101,
+          "bounds_emu": [
+            7235735,
+            1979486,
+            8385264,
+            2253806
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 102,
+          "bounds_emu": [
+            7131772,
+            2193798,
+            8489227,
+            2468118
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 103,
+          "bounds_emu": [
+            7514545,
+            2408110,
+            8106455,
+            2682430
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 104,
+          "bounds_emu": [
+            7194585,
+            3236976,
+            8426415,
+            3480816
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 105,
+          "bounds_emu": [
+            6934152,
+            3427476,
+            8686847,
+            3671316
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 106,
+          "bounds_emu": [
+            7194585,
+            4570476,
+            8426415,
+            4814316
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 107,
+          "bounds_emu": [
+            6934152,
+            4760976,
+            8686847,
+            5004816
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 108,
+          "bounds_emu": [
+            9319677,
+            3848862,
+            10244674,
+            4107942
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 109,
+          "bounds_emu": [
+            9230416,
+            4051268,
+            10333935,
+            4310348
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 110,
+          "bounds_emu": [
+            9230416,
+            4253674,
+            10333935,
+            4512754
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 111,
+          "bounds_emu": [
+            11009138,
+            2834450,
+            11755612,
+            3093530
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 112,
+          "bounds_emu": [
+            11009138,
+            3036856,
+            11755612,
+            3295936
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 113,
+          "bounds_emu": [
+            11102862,
+            3239262,
+            11661888,
+            3498342
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 114,
+          "bounds_emu": [
+            11009138,
+            4710874,
+            11755612,
+            4969954
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 115,
+          "bounds_emu": [
+            10960044,
+            4913281,
+            11804706,
+            5172361
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 116,
+          "bounds_emu": [
+            11151956,
+            5115687,
+            11612795,
+            5374767
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 117,
+          "bounds_emu": [
+            7402413,
+            5882640,
+            8218586,
+            6111240
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 118,
+          "bounds_emu": [
+            7256708,
+            6061234,
+            8364293,
+            6289834
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 119,
+          "bounds_emu": [
+            7555995,
+            6239828,
+            8065005,
+            6468428
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 120,
+          "bounds_emu": [
+            9372207,
+            5816965,
+            11011293,
+            6076045
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 121,
+          "bounds_emu": [
+            9358818,
+            6019371,
+            11024682,
+            6278451
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 122,
+          "bounds_emu": [
+            13086398,
+            2450782,
+            13964603,
+            2755582
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 123,
+          "bounds_emu": [
+            12818614,
+            2688908,
+            14232386,
+            2993708
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 124,
+          "bounds_emu": [
+            12876371,
+            3889058,
+            14174629,
+            4193858
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 125,
+          "bounds_emu": [
+            12986635,
+            4127182,
+            14064365,
+            4431982
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 126,
+          "bounds_emu": [
+            12794791,
+            5317998,
+            14256209,
+            5592318
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 127,
+          "bounds_emu": [
+            12695553,
+            5532311,
+            14355446,
+            5806631
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 128,
+          "bounds_emu": [
+            12941284,
+            5746623,
+            14109716,
+            6020943
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 129,
+          "bounds_emu": [
+            12654153,
+            6347460,
+            14396847,
+            6591300
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 130,
+          "bounds_emu": [
+            13078206,
+            6537960,
+            13972794,
+            6781800
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 131,
+          "bounds_emu": [
+            704850,
+            7172325,
+            2633186,
+            7477125
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 132,
+          "bounds_emu": [
+            707708,
+            7539514,
+            8790599,
+            7798594
+          ]
+        },
+        {
+          "tag": "text",
+          "decision": "native",
+          "shape_id": 133,
+          "bounds_emu": [
+            707708,
+            7825264,
+            9606701,
+            8084344
+          ]
+        },
+        {
+          "tag": "g",
+          "decision": "native",
+          "id": "texts",
+          "shape_id": 134,
+          "bounds_emu": [
+            491490,
+            196215,
+            14396847,
+            8084344
+          ]
+        }
+      ]
+    }
+  ]
+}

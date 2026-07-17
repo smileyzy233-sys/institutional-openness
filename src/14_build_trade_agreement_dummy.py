@@ -257,6 +257,101 @@ def attach_raw_scores(
     return out
 
 
+def load_idealpoint_country_year(needed_isos: set[str] | None = None) -> pd.DataFrame:
+    """Load UNGA ideal points as an ISO3-country-year lookup."""
+    if not config.IDEALPOINT_ESTIMATES_PATH.exists():
+        raise FileNotFoundError(
+            f"Ideal point estimates not found: {config.IDEALPOINT_ESTIMATES_PATH}"
+        )
+    if not config.AGREEMENT_SCORES_PATH.exists():
+        raise FileNotFoundError(
+            f"Agreement score source not found: {config.AGREEMENT_SCORES_PATH}"
+        )
+
+    ideal = pd.read_csv(
+        config.IDEALPOINT_ESTIMATES_PATH,
+        encoding=config.CSV_ENCODING,
+        usecols=["ccode", "session", "IdealPointAll", "iso3c"],
+    )
+    session_year = pd.read_csv(
+        config.AGREEMENT_SCORES_PATH,
+        encoding=config.CSV_ENCODING,
+        usecols=["session.x", "year"],
+    ).drop_duplicates()
+    session_year = session_year.rename(columns={"session.x": "session"})
+    if session_year["session"].duplicated().any():
+        duplicates = session_year.loc[
+            session_year["session"].duplicated(), "session"
+        ].tolist()
+        raise ValueError(f"UNGA session-year mapping is not unique: {duplicates[:5]}")
+
+    ideal["iso3c"] = ideal["iso3c"].map(normalize_iso3)
+    ideal["session"] = pd.to_numeric(ideal["session"], errors="coerce")
+    ideal["IdealPointAll"] = pd.to_numeric(ideal["IdealPointAll"], errors="coerce")
+    ideal = ideal[
+        ideal["iso3c"].ne("")
+        & ideal["session"].notna()
+        & ideal["IdealPointAll"].notna()
+    ].copy()
+    if needed_isos is not None:
+        ideal = ideal[ideal["iso3c"].isin(needed_isos)].copy()
+
+    country_year = ideal.merge(session_year, on="session", how="left", validate="m:1")
+    country_year["year"] = pd.to_numeric(country_year["year"], errors="coerce")
+    country_year = country_year[country_year["year"].notna()].copy()
+    country_year["year"] = country_year["year"].astype("int32")
+
+    duplicated = country_year.duplicated(["iso3c", "year"], keep=False)
+    if duplicated.any():
+        examples = (
+            country_year.loc[duplicated, ["iso3c", "ccode", "session", "year"]]
+            .sort_values(["iso3c", "year", "ccode"])
+            .head()
+            .to_dict("records")
+        )
+        raise ValueError(f"Ideal point ISO-year lookup is not unique: {examples}")
+
+    return country_year[["iso3c", "year", "IdealPointAll"]].rename(
+        columns={"IdealPointAll": "idealpoint"}
+    )
+
+
+def attach_idealpoint_distance(
+    frame: pd.DataFrame, *, origin_col: str, destination_col: str
+) -> pd.DataFrame:
+    """Attach absolute UNGA ideal-point distance for directed country-year rows."""
+    out = frame.copy()
+    needed_isos = set(out[origin_col].dropna().astype(str)) | set(
+        out[destination_col].dropna().astype(str)
+    )
+    ideal = load_idealpoint_country_year(needed_isos)
+    origin_lookup = ideal.rename(
+        columns={"iso3c": origin_col, "idealpoint": "_idealpoint_o"}
+    )
+    destination_lookup = ideal.rename(
+        columns={"iso3c": destination_col, "idealpoint": "_idealpoint_d"}
+    )
+
+    out = out.merge(
+        origin_lookup,
+        on=[origin_col, "year"],
+        how="left",
+        validate="m:1",
+    )
+    out = out.merge(
+        destination_lookup,
+        on=[destination_col, "year"],
+        how="left",
+        validate="m:1",
+    )
+    out["idealpoint_abs_distance"] = (
+        out["_idealpoint_o"].sub(out["_idealpoint_d"]).abs()
+    )
+    domestic = out[origin_col].eq(out[destination_col])
+    out.loc[domestic, "idealpoint_abs_distance"] = 0.0
+    return out.drop(columns=["_idealpoint_o", "_idealpoint_d"])
+
+
 def prepare_icio(aliases: dict[str, str]) -> pd.DataFrame:
     if not config.ICIO2019_PATH.exists():
         raise FileNotFoundError(f"ICIO input not found: {config.ICIO2019_PATH}")
@@ -340,6 +435,7 @@ def build_icio_economies_all_years_panel(
     panel = attach_agreement_data(
         panel, active, origin_col="iso_o", destination_col="iso_d"
     )
+    panel = attach_idealpoint_distance(panel, origin_col="iso_o", destination_col="iso_d")
     panel["sample_scope"] = ICIO_SAMPLE_SCOPE
     preferred = [
         "iso_o",
@@ -360,6 +456,7 @@ def build_icio_economies_all_years_panel(
         "WBID_list",
         "rta_name_list",
         "match_status",
+        "idealpoint_abs_distance",
         "sample_scope",
     ]
     return panel[preferred].sort_values(["iso_o", "iso_d", "year"], kind="stable")
@@ -658,6 +755,25 @@ def build_diagnostics(
                 "icio_sample_economies_all_years_dummy_0",
                 int(all_years_panel["trade_agreement_dummy"].eq(0).sum()),
             ),
+            (
+                "icio_sample_economies_all_years_idealpoint_distance_non_missing",
+                int(all_years_panel["idealpoint_abs_distance"].notna().sum()),
+            ),
+            (
+                "icio_sample_economies_all_years_idealpoint_distance_missing",
+                int(all_years_panel["idealpoint_abs_distance"].isna().sum()),
+            ),
+            (
+                "icio_sample_economies_all_years_international_idealpoint_distance_missing",
+                int(
+                    all_years_panel.loc[
+                        all_years_panel["is_domestic_pair"].eq(0),
+                        "idealpoint_abs_distance",
+                    ]
+                    .isna()
+                    .sum()
+                ),
+            ),
             ("icio_sample_excluded_code_count", len(excluded_codes)),
             ("icio_sample_excluded_codes", "; ".join(excluded_codes)),
             (
@@ -741,6 +857,9 @@ def validate_outputs(
     assert all_years_panel.loc[domestic, "trade_agreement_dummy"].eq(0).all()
     assert all_years_panel.loc[domestic, "agreement_applicable"].eq(0).all()
     assert all_years_panel.loc[~domestic, "agreement_applicable"].eq(1).all()
+    assert "idealpoint_abs_distance" in all_years_panel.columns
+    assert all_years_panel["idealpoint_abs_distance"].dropna().ge(0).all()
+    assert all_years_panel.loc[domestic, "idealpoint_abs_distance"].eq(0).all()
     assert all_years_panel.groupby("year").size().eq(
         EXPECTED_ICIO_ECONOMY_COUNT ** 2
     ).all()
@@ -752,6 +871,7 @@ def validate_outputs(
             "raw_investment_score",
             "num_active_agreements",
             "agreement_id_list",
+            "idealpoint_abs_distance",
         ]
     ].nunique(dropna=False)
     assert symmetry.le(1).all().all()

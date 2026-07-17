@@ -1,40 +1,59 @@
-你正在为一条 DTA 条款进行阶段 2 编码。该条款已经在阶段 1 被最终判定为制度型开放。
+你正在对一条已被 Stage 1 判定为“制度型开放”的 DTA 条款进行 Stage 2 编码。
 
-任务：
-判断该条款与制度型贸易开放、跨境投资制度型开放之间的直接影响关系。
+注意：`provision_text` 通常是 DTA 2.0 的编码问题或制度安排描述，不一定是法律原文。应判断其指向的制度安排，而非问句本身是否有法律效力；不得因其是询问、定义、参数或程序问题而直接判为 `none`。
 
-字段名和枚举值是程序接口，必须严格使用下列英文标识，不要翻译或改写。
+判断该安排是否直接规范或实质影响贸易开放、投资开放、两者或均不涉及。
 
-impact_type 允许值：
-- mp: 仅属于制度型贸易开放
-- tr: 仅属于跨境投资制度型开放
-- both: 同时属于制度型贸易开放和跨境投资制度型开放
-- none: 属于制度型开放，但与制度型贸易开放或跨境投资制度型开放没有直接关系
+## 渠道
 
-重要规则：
-- tr 表示跨境投资制度型开放，不要把 tr 理解为 trade。
-- none 不等于非制度型开放；本条款已经通过阶段 1，被判定为制度型开放。
-- 如果 impact_type 为 mp，返回 trade_weight 1.0、investment_weight 0.0。
-- 如果 impact_type 为 tr，返回 trade_weight 0.0、investment_weight 1.0。
-- 如果 impact_type 为 none，返回 trade_weight 0.0、investment_weight 0.0。
-- 如果 impact_type 为 both，trade_weight 和 investment_weight 都必须严格大于 0 且小于 1，并且二者之和必须为 1。
+贸易渠道：直接规范或实质性影响货物或服务跨境交易、外国商品/服务/供应商准入与待遇、关税、数量或出口限制、贸易救济、原产地、海关便利化、SPS/TBT、标准检验认证、政府采购外国供应商准入、跨境服务，以及与贸易直接相关的支付、竞争、补贴或国企规则。
 
-条款元数据：
-- provision_id: {provision_id}
-- policy_area: {policy_area}
-- original_coding: {original_coding}
-- chapter_name: {chapter_name}
-- section_name: {section_name}
-- final_dominant_dimension: {final_dominant_dimension}
+投资渠道：直接规范或实质性影响外资准入、设立、收购、所有权、商业存在、外国投资者/投资/外资企业待遇与经营、服务模式3、投资审批和便利化、业绩要求、资本转移和利润汇出、征收补偿、投资保护、投资争端，以及外资企业竞争条件。
 
-条款原文：
-{provision_text}
+一般营商环境、合作、对话、信息交换、技术援助或能力建设，若不直接适用于具体贸易或投资措施，不构成渠道。
 
-只返回严格 JSON，不要添加 Markdown、解释或代码块：
+## 分类
+
+* 仅贸易：`mp`
+* 仅投资：`tr`
+* 两者：`both`
+* 均无：`none`
+
+`none` 仅在两个渠道均不存在时使用。认证、计算方法、期限、门槛、核查、预裁定、许可、审批、透明度或行政程序，只要影响贸易或投资主体的资格、成本、待遇、限制、风险或确定性，就应识别相应渠道。`both` 必须分别存在贸易和投资机制，不能仅因经济影响广泛而选择。
+
+边界：
+
+* 跨境服务通常为 `mp`；商业存在/模式3具有投资渠道；同时规范二者为 `both`。
+* 投资收益、利润汇出、投资资本转移通常为 `tr`；贸易支付通常为 `mp`。
+* 政府采购外国供应商准入通常为 `mp`，除非明确涉及外资设立或商业存在。
+* 国企、竞争、补贴不得自动判为 `both`。
+* 海关、原产地、SPS、TBT、出口限制、贸易救济通常具有贸易渠道。
+
+## 权重
+
+* `mp`：trade_weight=1.0，investment_weight=0.0
+* `tr`：trade_weight=0.0，investment_weight=1.0
+* `none`：trade_weight=0.0，investment_weight=0.0
+* `both`：两项均大于0且合计1，优先使用 0.5/0.5、0.6/0.4、0.4/0.6、0.7/0.3 或 0.3/0.7。
+
+## 输入
+
+* provision_id: {provision_id}
+* policy_area: {policy_area}
+* original_coding: {original_coding}
+* chapter_name: {chapter_name}
+* section_name: {section_name}
+* final_dominant_dimension: {final_dominant_dimension}
+* provision_text: {provision_text}
+
+以 `provision_text` 指向的制度安排为主，其他字段仅辅助判断。
+
+只返回严格 JSON：
+
 {{
-  "impact_type": "both",
-  "trade_weight": 0.65,
-  "investment_weight": 0.35,
-  "reason": "...",
-  "confidence": 0.82
+"impact_type": "both",
+"trade_weight": 0.5,
+"investment_weight": 0.5,
+"reason": "说明实际作用机制。mp说明贸易渠道及为何无独立投资渠道；tr反之；both分别说明两个渠道；none说明为何仅属一般治理且两个渠道均不存在。",
+"confidence": 0.82
 }}

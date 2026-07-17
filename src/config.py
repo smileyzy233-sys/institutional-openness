@@ -23,6 +23,7 @@ STAGE1B_LOG_DIR = LOG_DIR / "stage1b"
 STAGE2_LOG_DIR = LOG_DIR / "stage2"
 LLM_LOG_DIR = LOG_DIR / "llm_calls"
 MANIFEST_DIR = PROJECT_ROOT / "manifests"
+IDEAPOINT_DIR = PROJECT_ROOT / "ideapoint"
 
 PROVISIONS_MASTER_PATH = INTERIM_DIR / "provisions_master.csv"
 AGREEMENT_MATRIX_PATH = INTERIM_DIR / "agreement_matrix.csv"
@@ -93,20 +94,22 @@ ICIO2019_PATH = NEED_DUMMY_DIR / "icio2019.dta"
 DTA_ACTIVE_AGREEMENT_DUMMY_PATH = (
     PROCESSED_DIR / "dta_active_agreement_dummy_all_dta_pair_year.csv"
 )
-ICIO_PAIR_YEAR_DUMMY_PATH = PROCESSED_DIR / "trade_agreement_dummy_icio2019_pair_year.csv"
+ICIO_PAIR_YEAR_DUMMY_PATH = PROCESSED_DIR / "trade_dummy_icio2019.csv"
 ICIO_ECONOMIES_ALL_YEARS_DUMMY_PATH = (
-    PROCESSED_DIR / "trade_agreement_dummy_icio_economies_all_years_pair_year.csv"
+    PROCESSED_DIR / "trade_dummy_icio_all_years.csv"
 )
 EXPANDED_UNION_PAIR_YEAR_DUMMY_PATH = (
-    PROCESSED_DIR / "trade_agreement_dummy_expanded_union_pair_year.csv"
+    PROCESSED_DIR / "trade_dummy_union_panel.csv"
 )
 TRADE_AGREEMENT_DUMMY_DIAGNOSTICS_PATH = (
-    PROCESSED_DIR / "trade_agreement_dummy_diagnostics.csv"
+    PROCESSED_DIR / "trade_dummy_diagnostics.csv"
 )
 TRADE_AGREEMENT_DUMMY_CODE_REPORT_PATH = (
-    PROCESSED_DIR / "trade_agreement_dummy_code_mismatch_report.csv"
+    PROCESSED_DIR / "trade_dummy_code_mismatch.csv"
 )
 COUNTRY_CODE_CROSSWALK_PATH = NEED_DUMMY_DIR / "country_code_crosswalk.csv"
+IDEALPOINT_ESTIMATES_PATH = IDEAPOINT_DIR / "IdealpointestimatesAll_Jun2024.csv"
+AGREEMENT_SCORES_PATH = IDEAPOINT_DIR / "AgreementScoresAll_Jun2024.csv"
 
 STAGE1A_PROMPT_PATH = PROMPT_DIR / "stage1a_institutional.txt"
 STAGE1A_ARBITRATION_PROMPT_PATH = PROMPT_DIR / "stage1a_arbitration.txt"

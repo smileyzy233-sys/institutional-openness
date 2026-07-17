@@ -1,0 +1,9 @@
+{
+  "engine": "opencv",
+  "status": "disabled",
+  "error": "OpenCV import failed: No module named 'cv2'",
+  "lines": [],
+  "rectangles": [],
+  "arrowheads": [],
+  "dashed_groups": []
+}

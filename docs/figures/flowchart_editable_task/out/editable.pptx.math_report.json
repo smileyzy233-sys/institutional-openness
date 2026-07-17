@@ -1,0 +1,10 @@
+{
+  "status": "skipped",
+  "attempted_count": 0,
+  "prepared_count": 0,
+  "editable_count": 0,
+  "fallback_vector_count": 0,
+  "office_math_xml_count": 0,
+  "mml2omml_xsl": "C:\\Program Files\\Microsoft Office\\root\\Office16\\MML2OMML.XSL",
+  "failures": []
+}
