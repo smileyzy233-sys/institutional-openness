@@ -22,7 +22,7 @@ REVIEW_COLS = [
     "review_verdict",
     "review_recommended_impact_type",
     "review_trade_weight",
-    "review_investment_weight",
+    "review_mp_weight",
     "review_issue_type",
     "review_reason",
     "review_confidence",
@@ -31,16 +31,23 @@ REVIEW_COLS = [
 CONFLICT_REVIEW_COLS = [
     "review_final_impact_type",
     "review_trade_weight",
-    "review_investment_weight",
+    "review_mp_weight",
     "review_decision",
     "review_reason",
     "review_confidence",
     "needs_human_followup",
 ]
 
-IMPACT_ORDER = ["mp", "tr", "both", "none"]
+IMPACT_ORDER = ["trade", "mp", "both", "none"]
 MODEL_ORDER = ["a", "b", "neither", "uncertain", "unknown"]
 VERDICT_ORDER = ["accept", "revise", "uncertain", "missing"]
+
+
+def stamp_impact_schema(frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    out["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
+    out["normalization_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
+    return out
 
 
 def norm_text(value: object) -> str:
@@ -91,7 +98,7 @@ def profile_tuple(row: pd.Series, prefix: str) -> tuple[str, float, float]:
     return (
         norm_lower(row[f"{prefix}_impact_type"]),
         as_float(row[f"{prefix}_trade_weight"]),
-        as_float(row[f"{prefix}_investment_weight"]),
+        as_float(row[f"{prefix}_mp_weight"]),
     )
 
 
@@ -136,10 +143,10 @@ def merge_conflict_review() -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
         [
             "option_1_impact_type",
             "option_1_trade_weight",
-            "option_1_investment_weight",
+            "option_1_mp_weight",
             "option_2_impact_type",
             "option_2_trade_weight",
-            "option_2_investment_weight",
+            "option_2_mp_weight",
         ],
         CONFLICT_BLIND_PATH,
     )
@@ -184,11 +191,11 @@ def merge_conflict_review() -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
             model_opt = "option_1" if row["option_1_model_letter"] == model else "option_2"
             impact_values.append(norm_lower(row[f"{model_opt}_impact_type"]))
             trade_values.append(as_float(row[f"{model_opt}_trade_weight"]))
-            invest_values.append(as_float(row[f"{model_opt}_investment_weight"]))
+            invest_values.append(as_float(row[f"{model_opt}_mp_weight"]))
         prefix = f"model_{model.lower()}"
         merged[f"{prefix}_impact_type_from_blind"] = impact_values
         merged[f"{prefix}_trade_weight_from_blind"] = trade_values
-        merged[f"{prefix}_investment_weight_from_blind"] = invest_values
+        merged[f"{prefix}_mp_weight_from_blind"] = invest_values
 
     decision_models: list[str] = []
     exact_models: list[str] = []
@@ -204,14 +211,14 @@ def merge_conflict_review() -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
         final_profile = (
             norm_lower(row["review_final_impact_type"]),
             as_float(row["review_trade_weight"]),
-            as_float(row["review_investment_weight"]),
+            as_float(row["review_mp_weight"]),
         )
         matched = []
         for model in ["A", "B"]:
             model_profile = (
                 norm_lower(row[f"model_{model.lower()}_impact_type_from_blind"]),
                 as_float(row[f"model_{model.lower()}_trade_weight_from_blind"]),
-                as_float(row[f"model_{model.lower()}_investment_weight_from_blind"]),
+                as_float(row[f"model_{model.lower()}_mp_weight_from_blind"]),
             )
             if same_profile(final_profile, model_profile):
                 matched.append(model)
@@ -314,7 +321,7 @@ def merge_consensus_review() -> tuple[pd.DataFrame, dict[str, pd.DataFrame], pd.
             "policy_area",
             "consensus_impact_type",
             "consensus_trade_weight",
-            "consensus_investment_weight",
+            "consensus_mp_weight",
         ],
         CONSENSUS_BASE_PATH,
     )
@@ -435,7 +442,7 @@ def build_final_review_table(conflict: pd.DataFrame, consensus: pd.DataFrame) ->
             "external_review_needs_human_followup": conflict["needs_human_followup"].map(norm_lower),
             "final_impact_type_after_gpt55": conflict["review_final_impact_type"].map(norm_lower),
             "final_trade_weight_after_gpt55": conflict["review_trade_weight"],
-            "final_investment_weight_after_gpt55": conflict["review_investment_weight"],
+            "final_mp_weight_after_gpt55": conflict["review_mp_weight"],
         }
     )
     consensus_final = pd.DataFrame(
@@ -457,7 +464,7 @@ def build_final_review_table(conflict: pd.DataFrame, consensus: pd.DataFrame) ->
                 "review_recommended_impact_type_norm"
             ],
             "final_trade_weight_after_gpt55": consensus["review_trade_weight"],
-            "final_investment_weight_after_gpt55": consensus["review_investment_weight"],
+            "final_mp_weight_after_gpt55": consensus["review_mp_weight"],
         }
     )
     final = pd.concat([conflict_final, consensus_final], ignore_index=True)
@@ -520,8 +527,8 @@ def write_summary_markdown(
             f"({int(conflict_model.get('b', 0))}/{decisive_conflict})."
         ),
         (
-            f"- Final impact distribution: mp={int(conflict_type.get('mp', 0))}, "
-            f"tr={int(conflict_type.get('tr', 0))}, "
+            f"- Final impact distribution: trade={int(conflict_type.get('trade', 0))}, "
+            f"mp={int(conflict_type.get('mp', 0))}, "
             f"both={int(conflict_type.get('both', 0))}, "
             f"none={int(conflict_type.get('none', 0))}."
         ),
@@ -556,7 +563,7 @@ def write_summary_markdown(
         "",
         (
             f"- Final distribution after applying conflict arbitration and consensus review: "
-            f"mp={int(final_type.get('mp', 0))}, tr={int(final_type.get('tr', 0))}, "
+            f"trade={int(final_type.get('trade', 0))}, mp={int(final_type.get('mp', 0))}, "
             f"both={int(final_type.get('both', 0))}, none={int(final_type.get('none', 0))}."
         ),
         (
@@ -634,6 +641,9 @@ def run() -> None:
         "consensus_policy_nonaccept_rates": policy_nonaccept,
     }
 
+    conflict = stamp_impact_schema(conflict)
+    consensus = stamp_impact_schema(consensus)
+    final_review = stamp_impact_schema(final_review)
     write_csv(conflict, MERGED_DIR / "stage2_conflict_82_gpt55_merged_with_key.csv")
     write_csv(consensus, MERGED_DIR / "stage2_consensus_682_gpt55_merged.csv")
     write_csv(final_review, MERGED_DIR / "stage2_review_final_764_gpt55.csv")
@@ -674,6 +684,7 @@ def run() -> None:
         [conflict_followup_for_output, consensus_followup_for_output],
         ignore_index=True,
     ).sort_values(["followup_source", "policy_area", "provision_id"])
+    followup = stamp_impact_schema(followup)
     write_csv(followup, MERGED_DIR / "stage2_review_human_followup_candidates.csv")
 
     quality_checks = pd.concat(
@@ -697,10 +708,14 @@ def run() -> None:
         ],
         ignore_index=True,
     )
+    quality_checks = stamp_impact_schema(quality_checks)
     write_csv(quality_checks, MERGED_DIR / "summary_review_package_quality_checks.csv")
 
     for name, frame in summaries.items():
-        write_csv(frame, MERGED_DIR / f"summary_{name}.csv")
+        write_csv(
+            stamp_impact_schema(frame),
+            MERGED_DIR / f"summary_{name}.csv",
+        )
 
     write_summary_markdown(conflict, consensus, final_review, quality_checks, summaries)
 

@@ -78,10 +78,14 @@ def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline
                 "final_dominant_dimension": ["rules", "standards"],
                 "final_impact_type": ["both", "both"],
                 "effective_trade_weight": [0.8, 0.3],
-                "effective_investment_weight": [0.2, 0.7],
+                "effective_mp_weight": [0.2, 0.7],
                 "pipeline_schema_version": [
                     config.PIPELINE_SCHEMA_VERSION,
                     config.PIPELINE_SCHEMA_VERSION,
+                ],
+                "impact_label_schema_version": [
+                    config.IMPACT_LABEL_SCHEMA_VERSION,
+                    config.IMPACT_LABEL_SCHEMA_VERSION,
                 ],
             }
         ),
@@ -92,7 +96,7 @@ def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline
     out = read_csv(config.AGREEMENT_LEVEL_INDICES_PATH).iloc[0]
 
     assert out["raw_trade_score"] == pytest.approx(0.7)
-    assert out["raw_investment_score"] == pytest.approx(0.8)
+    assert out["raw_mp_score"] == pytest.approx(0.8)
     assert out["num_total_provisions_included"] == 2
     assert out["num_total_provisions_full_coverage"] == 1
     assert out["total_provision_coverage"] == pytest.approx(1.5)
@@ -114,8 +118,8 @@ def test_country_pair_union_uses_maximum_fractional_coverage() -> None:
         matrix_by_id=matrix_by_id,
         provision_cols=["P0001", "P0002"],
         trade_w=np.array([0.8, 0.3]),
-        investment_w=np.array([0.2, 0.7]),
+        mp_w=np.array([0.2, 0.7]),
     )
 
     assert result["raw_trade_score"] == pytest.approx(0.9)
-    assert result["raw_investment_score"] == pytest.approx(0.85)
+    assert result["raw_mp_score"] == pytest.approx(0.85)

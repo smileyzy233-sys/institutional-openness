@@ -24,14 +24,18 @@ MODEL_KEEP_COLUMNS = [
     "provision_id",
     "impact_type",
     "raw_trade_weight",
-    "raw_investment_weight",
+    "raw_mp_weight",
     "normalized_trade_weight",
-    "normalized_investment_weight",
+    "normalized_mp_weight",
     "reason",
     "confidence",
     "model_provider",
     "model_name",
     "prompt_version",
+    "prompt_sha256",
+    "source_prompt_version",
+    "normalization_version",
+    "impact_label_schema_version",
     "run_id",
     "stage1_final_sha256",
     "raw_response",
@@ -43,7 +47,7 @@ def selected_model_decision(row: pd.Series, model_role: str) -> dict[str, Any]:
         "provision_id": row.get("provision_id"),
         "impact_type": row.get("impact_type"),
         "raw_trade_weight": row.get("raw_trade_weight"),
-        "raw_investment_weight": row.get("raw_investment_weight"),
+        "raw_mp_weight": row.get("raw_mp_weight"),
         "confidence": row.get("confidence"),
         "raw_response": row.get("raw_response"),
     }
@@ -56,7 +60,7 @@ def selected_model_decision(row: pd.Series, model_role: str) -> dict[str, Any]:
     return {
         "final_impact_type": impact_type,
         "final_trade_weight": normalized["normalized_trade_weight"],
-        "final_investment_weight": normalized["normalized_investment_weight"],
+        "final_mp_weight": normalized["normalized_mp_weight"],
         "stage2_decision_source": f"single_model_{model_role.lower()}",
         "stage2_resolution_method": method,
         "stage2_was_arbitrated": False,
@@ -70,21 +74,21 @@ def not_applicable_stage2(model_role: str) -> dict[str, Any]:
         "model_a_impact_type": "",
         "model_b_impact_type": "",
         "model_a_trade_weight": pd.NA,
-        "model_a_investment_weight": pd.NA,
+        "model_a_mp_weight": pd.NA,
         "model_b_trade_weight": pd.NA,
-        "model_b_investment_weight": pd.NA,
+        "model_b_mp_weight": pd.NA,
         "stage2_single_model_role": model_role,
         "final_impact_type": "not_applicable",
         "final_trade_weight": 0.0,
-        "final_investment_weight": 0.0,
+        "final_mp_weight": 0.0,
         "effective_trade_weight": 0.0,
-        "effective_investment_weight": 0.0,
+        "effective_mp_weight": 0.0,
         "stage2_decision_source": "not_applicable",
         "stage2_resolution_method": "not_applicable",
         "stage2_was_arbitrated": False,
         "stage2_was_human_reviewed": False,
         "both_trade_weight_abs_diff": pd.NA,
-        "both_investment_weight_abs_diff": pd.NA,
+        "both_mp_weight_abs_diff": pd.NA,
         "final_unresolved": False,
     }
 
@@ -101,7 +105,7 @@ def assert_final_consistent(final_df: pd.DataFrame, provisions: pd.DataFrame) ->
     assert final_df.loc[non_inst, "final_impact_type"].eq("not_applicable").all()
     assert pd.to_numeric(final_df.loc[non_inst, "final_trade_weight"], errors="coerce").eq(0).all()
     assert pd.to_numeric(
-        final_df.loc[non_inst, "final_investment_weight"],
+        final_df.loc[non_inst, "final_mp_weight"],
         errors="coerce",
     ).eq(0).all()
 
@@ -113,22 +117,18 @@ def assert_final_consistent(final_df: pd.DataFrame, provisions: pd.DataFrame) ->
 
     both_mask = final_df["final_impact_type"].eq("both")
     trade = pd.to_numeric(final_df["final_trade_weight"], errors="coerce")
-    investment = pd.to_numeric(final_df["final_investment_weight"], errors="coerce")
+    mp = pd.to_numeric(final_df["final_mp_weight"], errors="coerce")
     assert trade[both_mask].gt(0).all()
-    assert investment[both_mask].gt(0).all()
-    assert (trade[both_mask] + investment[both_mask] - 1.0).abs().le(
+    assert mp[both_mask].gt(0).all()
+    assert (trade[both_mask] + mp[both_mask] - 1.0).abs().le(
         config.WEIGHT_SUM_TOLERANCE
     ).all()
 
-    fixed_expectations = {
-        "mp": (1.0, 0.0),
-        "tr": (0.0, 1.0),
-        "none": (0.0, 0.0),
-    }
-    for impact_type, (trade_weight, investment_weight) in fixed_expectations.items():
+    fixed_expectations = config.FIXED_TYPE_WEIGHTS
+    for impact_type, (trade_weight, mp_weight) in fixed_expectations.items():
         mask = final_df["final_impact_type"].eq(impact_type)
         assert trade[mask].eq(trade_weight).all()
-        assert investment[mask].eq(investment_weight).all()
+        assert mp[mask].eq(mp_weight).all()
 
 
 def build_synthetic_comparison(
@@ -156,7 +156,7 @@ def build_synthetic_comparison(
 
     impact = comparison["impact_type"].astype(str).str.strip().str.lower()
     trade = pd.to_numeric(comparison["normalized_trade_weight"], errors="coerce")
-    investment = pd.to_numeric(comparison["normalized_investment_weight"], errors="coerce")
+    mp = pd.to_numeric(comparison["normalized_mp_weight"], errors="coerce")
 
     out = pd.DataFrame(
         {
@@ -167,13 +167,15 @@ def build_synthetic_comparison(
             "needs_arbitration": False,
             "conflict_reason": "",
             "model_a_trade_weight": trade,
-            "model_a_investment_weight": investment,
+            "model_a_mp_weight": mp,
             "model_b_trade_weight": trade,
-            "model_b_investment_weight": investment,
+            "model_b_mp_weight": mp,
             "both_trade_weight_abs_diff": 0.0,
-            "both_investment_weight_abs_diff": 0.0,
+            "both_mp_weight_abs_diff": 0.0,
             "stage1_final_sha256": stage1_final_sha256,
             "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+            "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+            "normalization_version": config.IMPACT_LABEL_SCHEMA_VERSION,
             "stage2_single_model_role": model_role,
             "comparison_generated_for": "single_stage2_model_route",
         }
@@ -202,7 +204,7 @@ def write_single_model_interim_files(
         "provision_id",
         "final_impact_type",
         "final_trade_weight",
-        "final_investment_weight",
+        "final_mp_weight",
         "reason",
         "confidence",
         "need_human_review",
@@ -226,7 +228,7 @@ def write_single_model_interim_files(
         "human_review_completed",
         "human_final_impact_type",
         "human_final_trade_weight",
-        "human_final_investment_weight",
+        "human_final_mp_weight",
         "human_review_notes",
     ]
     write_csv(pd.DataFrame(columns=arbitration_cols), config.STAGE2_ARBITRATION_RESULTS_PATH)
@@ -295,18 +297,20 @@ def run(*, model_role: str = "B") -> None:
                 if role == model_role:
                     decision[f"{prefix}_impact_type"] = decision["final_impact_type"]
                     decision[f"{prefix}_trade_weight"] = decision["final_trade_weight"]
-                    decision[f"{prefix}_investment_weight"] = decision["final_investment_weight"]
+                    decision[f"{prefix}_mp_weight"] = decision["final_mp_weight"]
                 else:
                     decision[f"{prefix}_impact_type"] = ""
                     decision[f"{prefix}_trade_weight"] = pd.NA
-                    decision[f"{prefix}_investment_weight"] = pd.NA
+                    decision[f"{prefix}_mp_weight"] = pd.NA
             decision["both_trade_weight_abs_diff"] = pd.NA
-            decision["both_investment_weight_abs_diff"] = pd.NA
+            decision["both_mp_weight_abs_diff"] = pd.NA
             decision["effective_trade_weight"] = decision["final_trade_weight"]
-            decision["effective_investment_weight"] = decision["final_investment_weight"]
+            decision["effective_mp_weight"] = decision["final_mp_weight"]
 
         base.update(decision)
         base["pipeline_schema_version"] = config.PIPELINE_SCHEMA_VERSION
+        base["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
+        base["normalization_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
         base["run_id"] = run_id
         base["stage1_final_sha256"] = stage1_final_sha256
         rows.append(base)
@@ -314,15 +318,15 @@ def run(*, model_role: str = "B") -> None:
     final_df = pd.DataFrame(rows)
     float_columns = [
         "model_a_trade_weight",
-        "model_a_investment_weight",
+        "model_a_mp_weight",
         "model_b_trade_weight",
-        "model_b_investment_weight",
+        "model_b_mp_weight",
         "final_trade_weight",
-        "final_investment_weight",
+        "final_mp_weight",
         "effective_trade_weight",
-        "effective_investment_weight",
+        "effective_mp_weight",
         "both_trade_weight_abs_diff",
-        "both_investment_weight_abs_diff",
+        "both_mp_weight_abs_diff",
     ]
     for column in float_columns:
         if column in final_df.columns:
@@ -352,22 +356,24 @@ def run(*, model_role: str = "B") -> None:
         "model_a_impact_type",
         "model_b_impact_type",
         "model_a_trade_weight",
-        "model_a_investment_weight",
+        "model_a_mp_weight",
         "model_b_trade_weight",
-        "model_b_investment_weight",
+        "model_b_mp_weight",
         "final_impact_type",
         "final_trade_weight",
-        "final_investment_weight",
+        "final_mp_weight",
         "effective_trade_weight",
-        "effective_investment_weight",
+        "effective_mp_weight",
         "stage2_decision_source",
         "stage2_resolution_method",
         "stage2_was_arbitrated",
         "stage2_was_human_reviewed",
         "both_trade_weight_abs_diff",
-        "both_investment_weight_abs_diff",
+        "both_mp_weight_abs_diff",
         "final_unresolved",
         "pipeline_schema_version",
+        "impact_label_schema_version",
+        "normalization_version",
         "run_id",
         "stage1_final_sha256",
     ]

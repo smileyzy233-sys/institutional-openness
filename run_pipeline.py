@@ -98,7 +98,7 @@ def run_stage1b_model(args: argparse.Namespace, role: str) -> None:
 
 def run_stage2_model(args: argparse.Namespace, role: str) -> None:
     provider, model, base_url = model_settings(args, role)
-    load_script("07_stage2_llm_code_trade_investment.py").run(
+    load_script("07_stage2_llm_code_trade_mp.py").run(
         model_role=role,
         provider=provider,
         model_name=model,

@@ -3,6 +3,7 @@ import pandas as pd
 
 import config
 from utils import (
+    assert_impact_label_schema,
     detect_old_six_classification_values,
     ensure_directories,
     read_csv,
@@ -16,7 +17,7 @@ REQUIRED_WEIGHT_COLUMNS = {
     "final_dominant_dimension",
     "final_impact_type",
     "effective_trade_weight",
-    "effective_investment_weight",
+    "effective_mp_weight",
 }
 
 
@@ -33,6 +34,7 @@ def validate_weights(weights: pd.DataFrame) -> None:
             "final_provision_weights.csv schema version mismatch: "
             f"{sorted(versions)}"
         )
+    assert_impact_label_schema(weights, "final_provision_weights.csv")
 
 
 def run() -> None:
@@ -61,7 +63,7 @@ def run() -> None:
     x = x.fillna(0.0)
     aligned_weights = weight_lookup.loc[provision_cols]
     trade_w = aligned_weights["effective_trade_weight"].astype(float).to_numpy()
-    investment_w = aligned_weights["effective_investment_weight"].astype(float).to_numpy()
+    mp_w = aligned_weights["effective_mp_weight"].astype(float).to_numpy()
 
     x_values = x.to_numpy(dtype=float)
     any_coverage = x_values > 0
@@ -69,28 +71,28 @@ def run() -> None:
     institutional_mask = aligned_weights["final_is_institutional_opening"].astype(int).eq(1).to_numpy()
     dimension_values = aligned_weights["final_dominant_dimension"].astype(str).str.lower()
     trade_related_mask = trade_w > 0
-    investment_related_mask = investment_w > 0
+    mp_related_mask = mp_w > 0
     raw_trade = np.round(x_values @ trade_w, config.OUTPUT_FLOAT_DECIMALS)
-    raw_investment = np.round(x_values @ investment_w, config.OUTPUT_FLOAT_DECIMALS)
+    raw_mp = np.round(x_values @ mp_w, config.OUTPUT_FLOAT_DECIMALS)
 
     out = pd.DataFrame(
         {
             "agreement_id": matrix["agreement_id"],
             "raw_trade_score": raw_trade,
-            "raw_investment_score": raw_investment,
+            "raw_mp_score": raw_mp,
             "num_total_provisions_included": any_coverage.sum(axis=1),
             "num_total_provisions_full_coverage": full_coverage.sum(axis=1),
             "total_provision_coverage": x_values.sum(axis=1),
             "num_trade_related_provisions_included": (any_coverage & trade_related_mask).sum(axis=1),
             "num_trade_related_provisions_full_coverage": (full_coverage & trade_related_mask).sum(axis=1),
             "trade_related_provision_coverage": (x_values * trade_related_mask).sum(axis=1),
-            "num_investment_related_provisions_included": (
-                any_coverage & investment_related_mask
+            "num_mp_related_provisions_included": (
+                any_coverage & mp_related_mask
             ).sum(axis=1),
-            "num_investment_related_provisions_full_coverage": (
-                full_coverage & investment_related_mask
+            "num_mp_related_provisions_full_coverage": (
+                full_coverage & mp_related_mask
             ).sum(axis=1),
-            "investment_related_provision_coverage": (x_values * investment_related_mask).sum(axis=1),
+            "mp_related_provision_coverage": (x_values * mp_related_mask).sum(axis=1),
             "num_institutional_related_provisions_included": (
                 any_coverage & institutional_mask
             ).sum(axis=1),
@@ -135,6 +137,7 @@ def run() -> None:
                 x_values * dimension_values.eq("standards").to_numpy()
             ).sum(axis=1),
             "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+            "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
             "coverage_matrix_schema_version": config.COVERAGE_MATRIX_SCHEMA_VERSION,
         }
     )
@@ -149,16 +152,16 @@ def run() -> None:
         "status",
         "date_entry_into_force",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "num_total_provisions_included",
         "num_total_provisions_full_coverage",
         "total_provision_coverage",
         "num_trade_related_provisions_included",
         "num_trade_related_provisions_full_coverage",
         "trade_related_provision_coverage",
-        "num_investment_related_provisions_included",
-        "num_investment_related_provisions_full_coverage",
-        "investment_related_provision_coverage",
+        "num_mp_related_provisions_included",
+        "num_mp_related_provisions_full_coverage",
+        "mp_related_provision_coverage",
         "num_institutional_related_provisions_included",
         "num_institutional_related_provisions_full_coverage",
         "institutional_related_provision_coverage",
@@ -175,6 +178,7 @@ def run() -> None:
         "num_standards_provisions_full_coverage",
         "standards_provision_coverage",
         "pipeline_schema_version",
+        "impact_label_schema_version",
         "coverage_matrix_schema_version",
     ]
     remaining = [col for col in out.columns if col not in first_cols]

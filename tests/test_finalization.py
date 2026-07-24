@@ -52,13 +52,15 @@ def test_finalize_marks_non_institutional_not_applicable_and_averages_both(temp_
                     "type_match": True,
                     "needs_arbitration": False,
                     "model_a_trade_weight": 0.7,
-                    "model_a_investment_weight": 0.3,
+                    "model_a_mp_weight": 0.3,
                     "model_b_trade_weight": 0.5,
-                    "model_b_investment_weight": 0.5,
+                    "model_b_mp_weight": 0.5,
                     "both_trade_weight_abs_diff": 0.2,
-                    "both_investment_weight_abs_diff": 0.2,
+                    "both_mp_weight_abs_diff": 0.2,
                     "stage1_final_sha256": stage1_hash,
                     "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+                    "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+                    "normalization_version": config.IMPACT_LABEL_SCHEMA_VERSION,
                 }
             ]
         ),
@@ -70,4 +72,4 @@ def test_finalize_marks_non_institutional_not_applicable_and_averages_both(temp_
     assert final.loc["P2", "effective_trade_weight"] == 0
     assert final.loc["P1", "final_impact_type"] == "both"
     assert final.loc["P1", "final_trade_weight"] == 0.6
-    assert final.loc["P1", "final_investment_weight"] == 0.4
+    assert final.loc["P1", "final_mp_weight"] == 0.4

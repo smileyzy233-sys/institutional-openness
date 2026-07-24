@@ -31,7 +31,7 @@ def test_heuristic_split_pipeline_to_final_weights(temp_pipeline):
     load_script("06_stage1_finalize.py").run()
     check_stage1_gate()
 
-    stage2_model = load_script("07_stage2_llm_code_trade_investment.py")
+    stage2_model = load_script("07_stage2_llm_code_trade_mp.py")
     stage2_model.run(model_role="A", provider="heuristic", model_name="heuristic_a", resume=False)
     stage2_model.run(model_role="B", provider="heuristic", model_name="heuristic_b", resume=False)
     load_script("08_stage2_compare_dual_model_results.py").run()
@@ -42,3 +42,6 @@ def test_heuristic_split_pipeline_to_final_weights(temp_pipeline):
     assert len(final) == 3
     assert "stage1a_decision_source" in final.columns
     assert "stage1b_decision_source" in final.columns
+    assert set(final["impact_label_schema_version"]) == {
+        config.IMPACT_LABEL_SCHEMA_VERSION
+    }

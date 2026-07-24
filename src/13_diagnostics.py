@@ -5,7 +5,13 @@ from typing import Any
 import pandas as pd
 
 import config
-from utils import as_bool_series, ensure_directories, read_csv, write_csv
+from utils import (
+    as_bool_series,
+    assert_impact_label_schema,
+    ensure_directories,
+    read_csv,
+    write_csv,
+)
 
 
 def safe_csv(path) -> pd.DataFrame:
@@ -43,23 +49,23 @@ def final_quality(final: pd.DataFrame, provisions: pd.DataFrame) -> dict[str, An
         }
     non_inst = pd.to_numeric(final["final_is_institutional_opening"], errors="coerce").eq(0)
     both = final["final_impact_type"].eq("both")
+    trade_type = final["final_impact_type"].eq("trade")
     mp = final["final_impact_type"].eq("mp")
-    tr = final["final_impact_type"].eq("tr")
     none = final["final_impact_type"].eq("none")
     trade = pd.to_numeric(final["final_trade_weight"], errors="coerce")
-    invest = pd.to_numeric(final["final_investment_weight"], errors="coerce")
+    mp_weight = pd.to_numeric(final["final_mp_weight"], errors="coerce")
     return {
         "quality_final_generated": True,
         "quality_non_institutional_not_applicable": bool(final.loc[non_inst, "final_impact_type"].eq("not_applicable").all()),
-        "quality_non_institutional_zero_weights": bool((trade[non_inst].eq(0) & invest[non_inst].eq(0)).all()),
-        "quality_mp_fixed_1_0": bool((trade[mp].eq(1) & invest[mp].eq(0)).all()),
-        "quality_tr_fixed_0_1": bool((trade[tr].eq(0) & invest[tr].eq(1)).all()),
-        "quality_none_fixed_0_0": bool((trade[none].eq(0) & invest[none].eq(0)).all()),
-        "quality_both_weights_positive": bool((trade[both].gt(0) & invest[both].gt(0)).all()),
-        "quality_both_weight_sum_1": bool((trade[both] + invest[both] - 1.0).abs().le(config.WEIGHT_SUM_TOLERANCE).all()),
+        "quality_non_institutional_zero_weights": bool((trade[non_inst].eq(0) & mp_weight[non_inst].eq(0)).all()),
+        "quality_trade_fixed_1_0": bool((trade[trade_type].eq(1) & mp_weight[trade_type].eq(0)).all()),
+        "quality_mp_fixed_0_1": bool((trade[mp].eq(0) & mp_weight[mp].eq(1)).all()),
+        "quality_none_fixed_0_0": bool((trade[none].eq(0) & mp_weight[none].eq(0)).all()),
+        "quality_both_weights_positive": bool((trade[both].gt(0) & mp_weight[both].gt(0)).all()),
+        "quality_both_weight_sum_1": bool((trade[both] + mp_weight[both] - 1.0).abs().le(config.WEIGHT_SUM_TOLERANCE).all()),
         "quality_final_count_matches_master": bool(len(final) == len(provisions)),
         "quality_duplicate_provision_id_count": int(final["provision_id"].duplicated().sum()),
-        "quality_missing_weight_count": int(final[["final_trade_weight", "final_investment_weight"]].isna().any(axis=1).sum()),
+        "quality_missing_weight_count": int(final[["final_trade_weight", "final_mp_weight"]].isna().any(axis=1).sum()),
         "quality_old_six_classification_value_count": old_value_count(final),
         "quality_unresolved_count": int(as_bool_series(final["final_unresolved"]).sum()) if "final_unresolved" in final.columns else 0,
     }
@@ -94,6 +100,8 @@ def run() -> None:
     stage2_arbitration = safe_csv(config.STAGE2_ARBITRATION_RESULTS_PATH)
     stage2_manual = safe_csv(config.STAGE2_MANUAL_REVIEW_QUEUE_PATH)
     final = safe_csv(config.FINAL_PROVISION_WEIGHTS_PATH)
+    if not final.empty:
+        assert_impact_label_schema(final, "final_provision_weights.csv")
 
     stage1a_conflict_rate = (
         len(stage1a_conflict) / len(provisions)
@@ -143,6 +151,7 @@ def run() -> None:
 
     diagnostics: dict[str, Any] = {
         "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
         "provisions_count": len(provisions),
         "stage1a_model_a_success_count": ok_unique_count(stage1a_a),
         "stage1a_model_b_success_count": ok_unique_count(stage1a_b),
@@ -199,7 +208,7 @@ def run() -> None:
     )
     if "final_impact_type" in final.columns:
         impact = final["final_impact_type"].astype(str).str.lower()
-        for impact_type in ["mp", "tr", "both", "none", "not_applicable"]:
+        for impact_type in ["trade", "mp", "both", "none", "not_applicable"]:
             diagnostics[f"final_impact_type_{impact_type}_count"] = int(impact.eq(impact_type).sum())
 
     both_rows = stage2_comparison[

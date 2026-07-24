@@ -37,7 +37,7 @@ Stage 1 classifies every provision for:
 - `dominant_dimension`: `rules`, `regulation`, `management`, `standards`, or `none`
 
 If model A and model B differ on either Stage 1 field, the provision enters
-Stage 1 arbitration. Stage 1 does not classify trade-investment type and does
+Stage 1 arbitration. Stage 1 does not classify trade/MP type and does
 not assign weights.
 
 Stage 2 starts only after the whole Stage 1 sample is finalized and
@@ -47,12 +47,14 @@ opening.
 
 Stage 2 classifies:
 
-- `mp`: only institutional trade opening
-- `tr`: only institutional cross-border investment opening
+- `trade`: only institutional trade opening
+- `mp`: only multinational-production / cross-border-investment opening
 - `both`: both institutional trade and cross-border investment opening
 - `none`: institutional opening, but no direct trade or investment impact
 
-`tr` means cross-border investment opening; it does not mean trade.
+`trade` is the trade channel. `mp` is the multinational-production /
+investment channel. The formal naming contract is
+[`docs/trade_mp_naming_contract.md`](docs/trade_mp_naming_contract.md).
 
 `none` and `not_applicable` are different:
 
@@ -67,10 +69,15 @@ arithmetic mean of the two model weights.
 Fixed type weights are enforced in code:
 
 ```text
-mp   -> 1.0, 0.0
-tr   -> 0.0, 1.0
-none -> 0.0, 0.0
+trade -> 1.0, 0.0
+mp    -> 0.0, 1.0
+none  -> 0.0, 0.0
 ```
+
+Stage 2 and every downstream output carry
+`impact_label_schema_version=trade_mp_v1`. The global
+`pipeline_schema_version` remains `3.0` so existing Stage 1 manifests stay
+valid.
 
 ## Commands
 
@@ -172,7 +179,7 @@ Agreement and country-pair-year scripts continue to use:
 
 ```text
 effective_trade_weight
-effective_investment_weight
+effective_mp_weight
 ```
 
 The old six-category weight types are not valid v2 inputs:

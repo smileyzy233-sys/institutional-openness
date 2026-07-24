@@ -454,7 +454,7 @@ def validate_stage1b_arbitration_output(
 def normalize_stage2_weights(
     impact_type: str,
     raw_trade_weight: Any,
-    raw_investment_weight: Any,
+    raw_mp_weight: Any,
 ) -> tuple[float, float]:
     impact_type = str(impact_type).strip().lower()
     if impact_type in config.FIXED_TYPE_WEIGHTS:
@@ -462,14 +462,14 @@ def normalize_stage2_weights(
     if impact_type != "both":
         raise ValueError(f"Invalid impact_type: {impact_type}")
     trade_weight = _coerce_optional_float(raw_trade_weight, "trade_weight")
-    investment_weight = _coerce_optional_float(raw_investment_weight, "investment_weight")
-    if trade_weight is None or investment_weight is None:
-        raise ValueError("both requires trade_weight and investment_weight")
-    if not 0 < trade_weight < 1 or not 0 < investment_weight < 1:
+    mp_weight = _coerce_optional_float(raw_mp_weight, "mp_weight")
+    if trade_weight is None or mp_weight is None:
+        raise ValueError("both requires trade_weight and mp_weight")
+    if not 0 < trade_weight < 1 or not 0 < mp_weight < 1:
         raise ValueError("both weights must be strictly between 0 and 1")
-    if abs(trade_weight + investment_weight - 1.0) > config.WEIGHT_SUM_TOLERANCE:
+    if abs(trade_weight + mp_weight - 1.0) > config.WEIGHT_SUM_TOLERANCE:
         raise ValueError("both weights must sum to 1")
-    return float(trade_weight), float(investment_weight)
+    return float(trade_weight), float(mp_weight)
 
 
 def validate_stage2_output(record: dict[str, Any]) -> tuple[dict[str, Any], str, str]:
@@ -485,14 +485,14 @@ def validate_stage2_output(record: dict[str, Any]) -> tuple[dict[str, Any], str,
             normalized.get("raw_trade_weight", normalized.get("trade_weight")),
             "raw_trade_weight",
         )
-        raw_investment = _coerce_optional_float(
-            normalized.get("raw_investment_weight", normalized.get("investment_weight")),
-            "raw_investment_weight",
+        raw_mp = _coerce_optional_float(
+            normalized.get("raw_mp_weight", normalized.get("mp_weight")),
+            "raw_mp_weight",
         )
-        trade_weight, investment_weight = normalize_stage2_weights(
+        trade_weight, mp_weight = normalize_stage2_weights(
             impact_type,
             raw_trade,
-            raw_investment,
+            raw_mp,
         )
         confidence = _validate_confidence(normalized.get("confidence"))
         raw_response = normalized.get("raw_response")
@@ -504,9 +504,9 @@ def validate_stage2_output(record: dict[str, Any]) -> tuple[dict[str, Any], str,
     normalized["provision_id"] = provision_id
     normalized["impact_type"] = impact_type
     normalized["raw_trade_weight"] = raw_trade
-    normalized["raw_investment_weight"] = raw_investment
+    normalized["raw_mp_weight"] = raw_mp
     normalized["normalized_trade_weight"] = trade_weight
-    normalized["normalized_investment_weight"] = investment_weight
+    normalized["normalized_mp_weight"] = mp_weight
     normalized["confidence"] = confidence
     return normalized, "ok", ""
 
@@ -518,7 +518,7 @@ def validate_stage2_arbitration_output(
         "provision_id": record.get("provision_id"),
         "impact_type": record.get("final_impact_type"),
         "raw_trade_weight": record.get("final_trade_weight"),
-        "raw_investment_weight": record.get("final_investment_weight"),
+        "raw_mp_weight": record.get("final_mp_weight"),
         "confidence": record.get("confidence"),
         "raw_response": record.get("raw_response"),
     }
@@ -529,7 +529,7 @@ def validate_stage2_arbitration_output(
     out["provision_id"] = normalized["provision_id"]
     out["final_impact_type"] = normalized["impact_type"]
     out["final_trade_weight"] = normalized["normalized_trade_weight"]
-    out["final_investment_weight"] = normalized["normalized_investment_weight"]
+    out["final_mp_weight"] = normalized["normalized_mp_weight"]
     out["confidence"] = normalized["confidence"]
     out["need_human_review"] = as_bool(out.get("need_human_review"))
     return out, "ok", ""
@@ -555,19 +555,19 @@ def stage2_needs_arbitration(model_a_impact_type: Any, model_b_impact_type: Any)
 
 def average_both_weights(
     a_trade: Any,
-    a_investment: Any,
+    a_mp: Any,
     b_trade: Any,
-    b_investment: Any,
+    b_mp: Any,
 ) -> tuple[float, float]:
     trade = (float(a_trade) + float(b_trade)) / 2.0
-    investment = (float(a_investment) + float(b_investment)) / 2.0
-    total = trade + investment
+    mp = (float(a_mp) + float(b_mp)) / 2.0
+    total = trade + mp
     if abs(total - 1.0) > config.WEIGHT_SUM_TOLERANCE:
         if total <= 0:
             raise ValueError("Cannot normalize non-positive both weight sum")
         trade /= total
-        investment /= total
-    return trade, investment
+        mp /= total
+    return trade, mp
 
 
 def detect_old_six_classification_values(df: pd.DataFrame) -> None:
@@ -609,6 +609,18 @@ def check_unique_valid_results(
         raise ValueError(f"每个模型每个 provision_id 只能有一条有效结果；重复示例：{sample}")
 
 
+def assert_impact_label_schema(frame: pd.DataFrame, label: str) -> None:
+    column = "impact_label_schema_version"
+    if column not in frame.columns:
+        raise ValueError(f"{label} missing required column: {column}")
+    versions = set(frame[column].dropna().astype(str))
+    if versions != {config.IMPACT_LABEL_SCHEMA_VERSION}:
+        raise ValueError(
+            f"{label} impact label schema mismatch: "
+            f"expected {config.IMPACT_LABEL_SCHEMA_VERSION!r}, got {sorted(versions)!r}"
+        )
+
+
 def load_valid_stage_results(path: Path, *, stage: int, model_role: str) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing stage {stage} model {model_role} results: {path}")
@@ -622,6 +634,8 @@ def load_valid_stage_results(path: Path, *, stage: int, model_role: str) -> pd.D
         raise ValueError(
             f"Stage {stage} model {model_role} has {len(failures)} unresolved technical failures."
         )
+    if stage == 2:
+        assert_impact_label_schema(df, f"Stage {stage} model {model_role}")
     check_unique_valid_results(df)
     return df.drop_duplicates("provision_id", keep="last").copy()
 
@@ -948,22 +962,22 @@ def heuristic_stage2_decision(row: pd.Series | dict[str, Any]) -> dict[str, Any]
     if trade_hits and investment_hits:
         total = trade_hits + investment_hits
         trade_weight = trade_hits / total
-        investment_weight = investment_hits / total
+        mp_weight = investment_hits / total
         impact_type = "both"
     elif investment_hits:
-        impact_type = "tr"
-        trade_weight, investment_weight = 0.0, 1.0
-    elif trade_hits:
         impact_type = "mp"
-        trade_weight, investment_weight = 1.0, 0.0
+        trade_weight, mp_weight = 0.0, 1.0
+    elif trade_hits:
+        impact_type = "trade"
+        trade_weight, mp_weight = 1.0, 0.0
     else:
         impact_type = "none"
-        trade_weight, investment_weight = 0.0, 0.0
+        trade_weight, mp_weight = 0.0, 0.0
     return {
         "provision_id": value_from_row(row, "provision_id"),
         "impact_type": impact_type,
-        "trade_weight": trade_weight,
-        "investment_weight": investment_weight,
+        "raw_trade_weight": trade_weight,
+        "raw_mp_weight": mp_weight,
         "reason": "Development-only deterministic stage 2 heuristic.",
         "confidence": 0.6,
     }
@@ -1168,6 +1182,7 @@ def write_table_manifest() -> None:
     manifest = {
         "generated_at": utc_timestamp(),
         "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
         "coverage_matrix_schema_version": config.COVERAGE_MATRIX_SCHEMA_VERSION,
         "raw_data_path": str(config.RAW_DATA_PATH),
         "raw_data_sha256": sha256_file(config.RAW_DATA_PATH),

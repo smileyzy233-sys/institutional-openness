@@ -263,7 +263,7 @@ def draw_common(ax: plt.Axes, nodes: dict[str, Node]) -> None:
 
     draw_node(
         ax,
-        Node("out1", 0.842, 0.605, 0.108, 0.070, "条款层面\n贸易/投资权重", "output", bold=True, fs=5.8),
+        Node("out1", 0.842, 0.605, 0.108, 0.070, "条款层面\n贸易/MP 权重", "output", bold=True, fs=5.8),
         nodes,
     )
     draw_node(
@@ -300,8 +300,8 @@ def draw_dual() -> plt.Figure:
     draw_common(ax, nodes)
 
     draw_node(ax, Node("s2_sample", 0.575, 0.705, 0.108, 0.064, "Stage 2 样本\nn=764", "neutral", bold=True, fs=5.9), nodes)
-    draw_node(ax, Node("model_a", 0.570, 0.555, 0.116, 0.080, "模型 A\n独立编码\nmp/tr/both/none", "stage2", bold=True, fs=5.4), nodes)
-    draw_node(ax, Node("model_b", 0.570, 0.410, 0.116, 0.080, "模型 B\n独立编码\nmp/tr/both/none", "stage2", bold=True, fs=5.4), nodes)
+    draw_node(ax, Node("model_a", 0.570, 0.555, 0.116, 0.080, "模型 A\n独立编码\ntrade/mp/both/none", "stage2", bold=True, fs=5.4), nodes)
+    draw_node(ax, Node("model_b", 0.570, 0.410, 0.116, 0.080, "模型 B\n独立编码\ntrade/mp/both/none", "stage2", bold=True, fs=5.4), nodes)
     draw_node(ax, Node("compare", 0.720, 0.478, 0.078, 0.088, "一致性\n比较\n与权重核验", "panel", bold=True, fs=5.2), nodes)
     draw_node(ax, Node("consensus", 0.720, 0.640, 0.078, 0.076, "一致样本\n接受\nn=682", "stage2", bold=True, fs=5.4), nodes)
     draw_node(ax, Node("conflict", 0.720, 0.300, 0.078, 0.086, "冲突样本\n仲裁\nn=82", "review", bold=True, fs=5.4), nodes)
@@ -323,7 +323,7 @@ def draw_dual() -> plt.Figure:
     draw_step(ax, 3, 0.570, 0.115, "Stage 2 双模型交叉验证", fill=PALETTE["stage2"])
     draw_step(ax, 4, 0.815, 0.115, "权重与面板输出", fill=PALETTE["output"])
 
-    footer(ax, "注：mp/tr/both/none 为 Stage 2 影响类型标签，并按统一规则转换为贸易/投资权重；数字为当前复核版本统计。")
+    footer(ax, "注：trade/mp/both/none 为 Stage 2 影响类型标签，并按统一规则转换为贸易/跨国生产投资权重；数字为当前复核版本统计。")
     return fig
 
 
@@ -340,7 +340,7 @@ def draw_single() -> plt.Figure:
 
     draw_node(ax, Node("s2_sample", 0.575, 0.705, 0.108, 0.064, "Stage 2 样本\nn=764", "neutral", bold=True, fs=5.9), nodes)
     draw_node(ax, Node("model_b", 0.575, 0.555, 0.108, 0.082, "模型 B\nQwen3.5-9B\n单模型编码", "stage2", bold=True, fs=5.4), nodes)
-    draw_node(ax, Node("types", 0.575, 0.405, 0.108, 0.088, "影响类型\nmp/tr/both/none\n及权重", "panel", fs=5.35), nodes)
+    draw_node(ax, Node("types", 0.575, 0.405, 0.108, 0.088, "影响类型\ntrade/mp/both/none\n及权重", "panel", fs=5.35), nodes)
     draw_node(ax, Node("validate", 0.720, 0.540, 0.078, 0.090, "规则校验\n标签集合\n权重映射", "panel", bold=True, fs=5.15), nodes)
     draw_node(ax, Node("review", 0.720, 0.330, 0.078, 0.094, "人工复核\n边界领域\n抽样核查", "review", bold=True, fs=5.15), nodes)
     draw_node(ax, Node("trace", 0.575, 0.218, 0.108, 0.070, "可追溯记录\nmodel / prompt\nhash", "panel", fs=4.9), nodes)

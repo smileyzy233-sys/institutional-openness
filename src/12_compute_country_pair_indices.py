@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 import config
-from utils import ensure_directories, read_csv, write_csv
+from utils import assert_impact_label_schema, ensure_directories, read_csv, write_csv
 
 
 def unique_join(values: pd.Series) -> str:
@@ -35,13 +35,13 @@ def compute_union_tuple(
     matrix_by_id: pd.DataFrame,
     provision_cols: list[str],
     trade_w: np.ndarray,
-    investment_w: np.ndarray,
+    mp_w: np.ndarray,
 ) -> dict[str, float | int]:
     agreement_ids = tuple(agreement_id for agreement_id in agreement_ids if agreement_id in matrix_by_id.index)
     if not agreement_ids:
         return {
             "raw_trade_score": np.nan,
-            "raw_investment_score": np.nan,
+            "raw_mp_score": np.nan,
             "num_active_agreements": 0,
         }
 
@@ -50,7 +50,7 @@ def compute_union_tuple(
     union_x = matrix_by_id.loc[agreement_ids, provision_cols].to_numpy(dtype=float).max(axis=0)
     return {
         "raw_trade_score": float(np.round(union_x @ trade_w, config.OUTPUT_FLOAT_DECIMALS)),
-        "raw_investment_score": float(np.round(union_x @ investment_w, config.OUTPUT_FLOAT_DECIMALS)),
+        "raw_mp_score": float(np.round(union_x @ mp_w, config.OUTPUT_FLOAT_DECIMALS)),
         "num_active_agreements": len(agreement_ids),
     }
 
@@ -69,10 +69,12 @@ def validate_inputs(agreement_indices: pd.DataFrame, weights: pd.DataFrame) -> N
             "agreement coverage schema mismatch: "
             f"{sorted(coverage_versions)}"
         )
-    required_weights = {"provision_id", "effective_trade_weight", "effective_investment_weight"}
+    required_weights = {"provision_id", "effective_trade_weight", "effective_mp_weight"}
     missing = required_weights - set(weights.columns)
     if missing:
         raise ValueError(f"final_provision_weights.csv missing required columns: {sorted(missing)}")
+    assert_impact_label_schema(agreement_indices, "agreement_level_indices.csv")
+    assert_impact_label_schema(weights, "final_provision_weights.csv")
 
 
 def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
@@ -106,10 +108,10 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
 
     weight_lookup = weights.set_index("provision_id")
     trade_w = weight_lookup.loc[provision_cols, "effective_trade_weight"].astype(float).to_numpy()
-    investment_w = weight_lookup.loc[provision_cols, "effective_investment_weight"].astype(float).to_numpy()
+    mp_w = weight_lookup.loc[provision_cols, "effective_mp_weight"].astype(float).to_numpy()
 
     bilateral = bilateral.merge(
-        agreement_indices[["agreement_id", "raw_trade_score", "raw_investment_score"]],
+        agreement_indices[["agreement_id", "raw_trade_score", "raw_mp_score"]],
         on="agreement_id",
         how="left",
     )
@@ -135,7 +137,7 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
                 matrix_by_id=matrix_by_id,
                 provision_cols=provision_cols,
                 trade_w=trade_w,
-                investment_w=investment_w,
+                mp_w=mp_w,
             )
         scores = pd.DataFrame([score_cache[combo] for combo in meta["agreement_tuple"]])
         out = pd.concat([meta.drop(columns=["agreement_tuple"]).reset_index(drop=True), scores], axis=1)
@@ -143,7 +145,7 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
         agg_func = "max" if method == "max" else "mean"
         score_meta = grouped.agg(
             raw_trade_score=("raw_trade_score", agg_func),
-            raw_investment_score=("raw_investment_score", agg_func),
+            raw_mp_score=("raw_mp_score", agg_func),
             num_active_agreements=("agreement_id", "nunique"),
         ).reset_index()
         out = meta.drop(columns=["agreement_tuple"]).merge(score_meta, on=group_cols, how="left")
@@ -156,15 +158,16 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
     out["trade_agreement_dummy"] = 1
     out["trade_agreement_dummy"] = out["trade_agreement_dummy"].astype("int8")
     out["pipeline_schema_version"] = config.PIPELINE_SCHEMA_VERSION
+    out["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
     out["coverage_matrix_schema_version"] = config.COVERAGE_MATRIX_SCHEMA_VERSION
 
-    if out[["raw_trade_score", "raw_investment_score"]].isna().any().any():
+    if out[["raw_trade_score", "raw_mp_score"]].isna().any().any():
         raise AssertionError("Country-pair output contains missing raw scores")
-    out[["raw_trade_score", "raw_investment_score"]] = out[
-        ["raw_trade_score", "raw_investment_score"]
+    out[["raw_trade_score", "raw_mp_score"]] = out[
+        ["raw_trade_score", "raw_mp_score"]
     ].round(config.OUTPUT_FLOAT_DECIMALS)
     symmetry = out.groupby(["pair_key", "year"])[
-        ["trade_agreement_dummy", "raw_trade_score", "raw_investment_score"]
+        ["trade_agreement_dummy", "raw_trade_score", "raw_mp_score"]
     ].nunique(dropna=False)
     if symmetry.gt(1).any(axis=1).any():
         raise AssertionError("Country-pair dummy or raw scores differ across directions")
@@ -184,9 +187,10 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
         "trade_agreement_dummy",
         "num_active_agreements",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "method",
         "pipeline_schema_version",
+        "impact_label_schema_version",
         "coverage_matrix_schema_version",
     ]
     out = out[[col for col in first_cols if col in out.columns]]

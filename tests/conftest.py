@@ -99,7 +99,7 @@ def temp_pipeline(monkeypatch, tmp_path):
         "STAGE1A_ARBITRATION_PROMPT_PATH": prompts / "stage1a_arbitration.txt",
         "STAGE1B_PROMPT_PATH": prompts / "stage1b_dimension.txt",
         "STAGE1B_ARBITRATION_PROMPT_PATH": prompts / "stage1b_arbitration.txt",
-        "STAGE2_PROMPT_PATH": prompts / "stage2_trade_investment.txt",
+        "STAGE2_PROMPT_PATH": prompts / "stage2_trade_mp.txt",
         "STAGE2_ARBITRATION_PROMPT_PATH": prompts / "stage2_type_arbitration.txt",
     }
     for name, value in path_values.items():

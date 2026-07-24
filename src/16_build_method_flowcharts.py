@@ -225,7 +225,7 @@ def draw_common_structure(
     add_title(ax, panel, title, subtitle)
     add_column_header(ax, 0.045, 0.185, "数据准备")
     add_column_header(ax, 0.235, 0.510, "Stage 1：识别制度型开放")
-    add_column_header(ax, 0.560, 0.805, "Stage 2：识别贸易/投资影响")
+    add_column_header(ax, 0.560, 0.805, "Stage 2：识别贸易/跨国生产投资影响")
     add_column_header(ax, 0.845, 0.960, "输出")
 
     for x in [0.210, 0.535, 0.825]:
@@ -329,7 +329,7 @@ def draw_common_structure(
         0.625,
         0.103,
         0.065,
-        "条款层面\n贸易/投资权重",
+        "条款层面\n贸易/MP 权重",
         fill="final",
         bold=True,
         fontsize=6.2,
@@ -398,7 +398,7 @@ def draw_dual_model() -> None:
         0.545,
         0.106,
         0.088,
-        "模型 A\n独立编码\nmp/tr\nboth/none",
+        "模型 A\n独立编码\ntrade/mp\nboth/none",
         fill="soft",
         fontsize=5.75,
         bold=True,
@@ -411,7 +411,7 @@ def draw_dual_model() -> None:
         0.395,
         0.106,
         0.088,
-        "模型 B\n独立编码\nmp/tr\nboth/none",
+        "模型 B\n独立编码\ntrade/mp\nboth/none",
         fill="soft",
         fontsize=5.75,
         bold=True,
@@ -530,7 +530,7 @@ def draw_dual_model() -> None:
 
     add_footer(
         ax,
-        "注：mp / tr / both / none 为 Stage 2 影响类型标签，并按统一规则转换为贸易/投资权重；数字为当前复核版本统计。",
+        "注：trade / mp / both / none 为 Stage 2 影响类型标签，并按统一规则转换为贸易/跨国生产投资权重；数字为当前复核版本统计。",
     )
     save_figure(fig, "method_flow_stage2_dual_model")
 
@@ -568,7 +568,7 @@ def draw_single_model() -> None:
         0.415,
         0.106,
         0.088,
-        "输出影响类型\nmp/tr\nboth/none\n及权重",
+        "输出影响类型\ntrade/mp\nboth/none\n及权重",
         fontsize=5.65,
     )
     add_box(

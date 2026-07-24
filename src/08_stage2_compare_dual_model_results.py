@@ -19,14 +19,18 @@ MODEL_KEEP_COLUMNS = [
     "provision_id",
     "impact_type",
     "raw_trade_weight",
-    "raw_investment_weight",
+    "raw_mp_weight",
     "normalized_trade_weight",
-    "normalized_investment_weight",
+    "normalized_mp_weight",
     "reason",
     "confidence",
     "model_provider",
     "model_name",
     "prompt_version",
+    "prompt_sha256",
+    "source_prompt_version",
+    "normalization_version",
+    "impact_label_schema_version",
     "run_id",
     "stage1_final_sha256",
     "raw_response",
@@ -42,7 +46,7 @@ def prefix_model(frame: pd.DataFrame, prefix: str) -> pd.DataFrame:
     out = out.rename(
         columns={
             f"{prefix}_normalized_trade_weight": f"{prefix}_trade_weight",
-            f"{prefix}_normalized_investment_weight": f"{prefix}_investment_weight",
+            f"{prefix}_normalized_mp_weight": f"{prefix}_mp_weight",
         }
     )
     return out
@@ -85,6 +89,8 @@ def run() -> None:
             "conflict_reason",
             "stage1_final_sha256",
             "pipeline_schema_version",
+            "impact_label_schema_version",
+            "normalization_version",
         ])
         write_csv(empty, config.STAGE2_COMPARISON_PATH)
         write_csv(empty, config.STAGE2_TYPE_CONFLICT_QUEUE_PATH)
@@ -140,18 +146,20 @@ def run() -> None:
         pd.to_numeric(comparison["model_a_trade_weight"], errors="coerce")
         - pd.to_numeric(comparison["model_b_trade_weight"], errors="coerce")
     ).abs().where(both_both)
-    comparison["both_investment_weight_abs_diff"] = (
-        pd.to_numeric(comparison["model_a_investment_weight"], errors="coerce")
-        - pd.to_numeric(comparison["model_b_investment_weight"], errors="coerce")
+    comparison["both_mp_weight_abs_diff"] = (
+        pd.to_numeric(comparison["model_a_mp_weight"], errors="coerce")
+        - pd.to_numeric(comparison["model_b_mp_weight"], errors="coerce")
     ).abs().where(both_both)
     comparison["both_trade_weight_abs_diff"] = comparison[
         "both_trade_weight_abs_diff"
     ].round(config.OUTPUT_FLOAT_DECIMALS)
-    comparison["both_investment_weight_abs_diff"] = comparison[
-        "both_investment_weight_abs_diff"
+    comparison["both_mp_weight_abs_diff"] = comparison[
+        "both_mp_weight_abs_diff"
     ].round(config.OUTPUT_FLOAT_DECIMALS)
     comparison["stage1_final_sha256"] = current_hash
     comparison["pipeline_schema_version"] = config.PIPELINE_SCHEMA_VERSION
+    comparison["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
+    comparison["normalization_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
 
     first_columns = [
         "provision_id",
@@ -161,13 +169,15 @@ def run() -> None:
         "needs_arbitration",
         "conflict_reason",
         "model_a_trade_weight",
-        "model_a_investment_weight",
+        "model_a_mp_weight",
         "model_b_trade_weight",
-        "model_b_investment_weight",
+        "model_b_mp_weight",
         "both_trade_weight_abs_diff",
-        "both_investment_weight_abs_diff",
+        "both_mp_weight_abs_diff",
         "stage1_final_sha256",
         "pipeline_schema_version",
+        "impact_label_schema_version",
+        "normalization_version",
     ]
     remaining = [column for column in comparison.columns if column not in first_columns]
     comparison = comparison[first_columns + remaining]

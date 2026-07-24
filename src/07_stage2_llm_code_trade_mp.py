@@ -32,10 +32,10 @@ from utils import (
 )
 
 
-def ensure_prompt(prompt_path: Path) -> str:
+def ensure_prompt(prompt_path: Path) -> tuple[str, str]:
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-    return prompt_path.read_text(encoding="utf-8")
+    return prompt_path.read_text(encoding="utf-8"), sha256_file(prompt_path)
 
 
 def prompt_row(row: pd.Series) -> dict[str, Any]:
@@ -60,6 +60,7 @@ def complete_record(
     run_id: str,
     input_hash: str,
     stage1_final_sha256: str,
+    prompt_sha256: str,
 ) -> dict[str, Any]:
     parsed = parsed or {}
     return {
@@ -72,9 +73,9 @@ def complete_record(
         "final_dominant_dimension": row.get("final_dominant_dimension"),
         "impact_type": parsed.get("impact_type"),
         "raw_trade_weight": parsed.get("raw_trade_weight"),
-        "raw_investment_weight": parsed.get("raw_investment_weight"),
+        "raw_mp_weight": parsed.get("raw_mp_weight"),
         "normalized_trade_weight": parsed.get("normalized_trade_weight"),
-        "normalized_investment_weight": parsed.get("normalized_investment_weight"),
+        "normalized_mp_weight": parsed.get("normalized_mp_weight"),
         "reason": parsed.get("reason"),
         "confidence": parsed.get("confidence"),
         "parse_status": parse_status,
@@ -85,6 +86,9 @@ def complete_record(
         "model_provider": model_provider,
         "model_name": model_name,
         "prompt_version": config.STAGE2_PROMPT_VERSION,
+        "prompt_sha256": prompt_sha256,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+        "normalization_version": config.IMPACT_LABEL_SCHEMA_VERSION,
         "stage1_final_sha256": stage1_final_sha256,
         "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
         "run_id": run_id,
@@ -125,6 +129,7 @@ def code_one(
     base_url: str | None,
     run_id: str,
     stage1_final_sha256: str,
+    prompt_sha256: str,
 ) -> dict[str, Any]:
     prompt_payload = prompt_row(row)
     base_prompt = render_prompt(prompt_template, prompt_payload)
@@ -132,7 +137,7 @@ def code_one(
         prompt_payload,
         extra=(
             f"{config.STAGE2_PROMPT_VERSION}:{model_role}:"
-            f"{thinking_mode_for_role(model_role)}"
+            f"{thinking_mode_for_role(model_role)}:{prompt_sha256}"
         ),
     )
     last_raw = ""
@@ -183,6 +188,7 @@ def code_one(
                         run_id=run_id,
                         input_hash=input_hash,
                         stage1_final_sha256=stage1_final_sha256,
+                        prompt_sha256=prompt_sha256,
                     )
                 last_parse_status = "ok"
                 last_validation_status = status
@@ -208,6 +214,7 @@ def code_one(
         run_id=run_id,
         input_hash=input_hash,
         stage1_final_sha256=stage1_final_sha256,
+        prompt_sha256=prompt_sha256,
     )
 
 
@@ -219,6 +226,7 @@ def existing_ok_ids(
     model_name: str,
     stage1_final_sha256: str,
     expected_hashes: dict[str, str],
+    prompt_sha256: str,
 ) -> set[str]:
     if not output_path.exists():
         return set()
@@ -231,6 +239,9 @@ def existing_ok_ids(
         "model_provider",
         "model_name",
         "prompt_version",
+        "prompt_sha256",
+        "impact_label_schema_version",
+        "normalization_version",
         "pipeline_schema_version",
         "stage1_final_sha256",
         "input_hash",
@@ -244,6 +255,11 @@ def existing_ok_ids(
         & existing["model_provider"].eq(provider)
         & existing["model_name"].eq(model_name)
         & existing["prompt_version"].eq(config.STAGE2_PROMPT_VERSION)
+        & existing["prompt_sha256"].eq(prompt_sha256)
+        & existing["impact_label_schema_version"].eq(
+            config.IMPACT_LABEL_SCHEMA_VERSION
+        )
+        & existing["normalization_version"].eq(config.IMPACT_LABEL_SCHEMA_VERSION)
         & existing["pipeline_schema_version"].eq(config.PIPELINE_SCHEMA_VERSION)
         & existing["stage1_final_sha256"].eq(stage1_final_sha256)
         & existing["input_hash"].eq(existing["provision_id"].astype(str).map(expected_hashes))
@@ -271,7 +287,7 @@ def run(
     model_name = model_name or settings["name"]
     base_url = base_url if base_url is not None else settings["base_url"]
     output_path = resolve_project_path(output_path or stage2_result_path_for_role(model_role))
-    prompt_template = ensure_prompt(resolve_project_path(prompt_path))
+    prompt_template, prompt_sha256 = ensure_prompt(resolve_project_path(prompt_path))
     validate_provider_setup(provider, base_url)
 
     stage1_final = read_csv(config.STAGE1_FINAL_CLASSIFICATION_PATH)
@@ -283,7 +299,7 @@ def run(
             prompt_row(row),
             extra=(
                 f"{config.STAGE2_PROMPT_VERSION}:{model_role}:"
-                f"{thinking_mode_for_role(model_role)}"
+                f"{thinking_mode_for_role(model_role)}:{prompt_sha256}"
             ),
         )
         for _, row in eligible.iterrows()
@@ -298,6 +314,7 @@ def run(
         model_name=model_name,
         stage1_final_sha256=stage1_final_sha256,
         expected_hashes=expected_hashes,
+        prompt_sha256=prompt_sha256,
     ) if resume else set()
     pending = eligible[~eligible["provision_id"].astype(str).isin(completed_ids)].copy()
     if limit is not None:
@@ -327,6 +344,7 @@ def run(
             base_url=base_url,
             run_id=run_id,
             stage1_final_sha256=stage1_final_sha256,
+            prompt_sha256=prompt_sha256,
         )
         rows.append(result)
         if index == 1 or index % 25 == 0 or index == len(pending):
@@ -345,6 +363,9 @@ def run(
             "model_provider",
             "model_name",
             "prompt_version",
+            "prompt_sha256",
+            "impact_label_schema_version",
+            "normalization_version",
             "stage1_final_sha256",
             "pipeline_schema_version",
         ])
@@ -379,7 +400,7 @@ def run(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Stage 2 trade-investment coding.")
+    parser = argparse.ArgumentParser(description="Stage 2 trade/MP coding.")
     parser.add_argument("--model-role", choices=["A", "B"], default="A")
     parser.add_argument(
         "--provider",

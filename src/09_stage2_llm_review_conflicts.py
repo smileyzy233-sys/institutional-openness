@@ -10,6 +10,7 @@ import pandas as pd
 
 import config
 from utils import (
+    assert_impact_label_schema,
     call_provider,
     check_stage1_gate,
     ensure_directories,
@@ -22,6 +23,7 @@ from utils import (
     render_prompt,
     resolve_project_path,
     review_context_hash,
+    sha256_file,
     utc_timestamp,
     validate_provider_setup,
     validate_stage2_arbitration_output,
@@ -33,7 +35,7 @@ ARBITRATION_COLUMNS = [
     "provision_id",
     "final_impact_type",
     "final_trade_weight",
-    "final_investment_weight",
+    "final_mp_weight",
     "arbitration_reason",
     "confidence",
     "need_human_review",
@@ -44,6 +46,9 @@ ARBITRATION_COLUMNS = [
     "model_provider",
     "model_name",
     "prompt_version",
+    "prompt_sha256",
+    "impact_label_schema_version",
+    "normalization_version",
     "pipeline_schema_version",
     "run_id",
     "created_at",
@@ -55,7 +60,7 @@ ARBITRATION_COLUMNS = [
 HUMAN_FIELDS = [
     "human_final_impact_type",
     "human_final_trade_weight",
-    "human_final_investment_weight",
+    "human_final_mp_weight",
     "human_review_reason",
     "human_reviewer",
     "human_reviewed_at",
@@ -63,10 +68,10 @@ HUMAN_FIELDS = [
 ]
 
 
-def ensure_prompt(prompt_path: Path) -> str:
+def ensure_prompt(prompt_path: Path) -> tuple[str, str]:
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-    return prompt_path.read_text(encoding="utf-8")
+    return prompt_path.read_text(encoding="utf-8"), sha256_file(prompt_path)
 
 
 def prompt_row(row: pd.Series) -> dict[str, Any]:
@@ -80,8 +85,8 @@ def heuristic_arbitration_response(row: pd.Series) -> str:
     decision = heuristic_stage2_decision(row)
     payload = {
         "final_impact_type": decision["impact_type"],
-        "final_trade_weight": decision["trade_weight"],
-        "final_investment_weight": decision["investment_weight"],
+        "final_trade_weight": decision["raw_trade_weight"],
+        "final_mp_weight": decision["raw_mp_weight"],
         "arbitration_reason": "Development-only deterministic stage 2 arbitration heuristic.",
         "confidence": 0.6,
         "need_human_review": False,
@@ -96,9 +101,9 @@ def context_hash_for_row(row: pd.Series) -> str:
         "model_a_impact_type",
         "model_b_impact_type",
         "model_a_trade_weight",
-        "model_a_investment_weight",
+        "model_a_mp_weight",
         "model_b_trade_weight",
-        "model_b_investment_weight",
+        "model_b_mp_weight",
         "model_a_model_name",
         "model_b_model_name",
         "model_a_prompt_version",
@@ -107,6 +112,7 @@ def context_hash_for_row(row: pd.Series) -> str:
     ]
     payload = {key: row.get(key, "") for key in keys}
     payload["pipeline_schema_version"] = config.PIPELINE_SCHEMA_VERSION
+    payload["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
     return review_context_hash(payload)
 
 
@@ -122,13 +128,14 @@ def complete_record(
     provider: str,
     model_name: str,
     run_id: str,
+    prompt_sha256: str,
 ) -> dict[str, Any]:
     parsed = parsed or {}
     return {
         "provision_id": row["provision_id"],
         "final_impact_type": parsed.get("final_impact_type"),
         "final_trade_weight": parsed.get("final_trade_weight"),
-        "final_investment_weight": parsed.get("final_investment_weight"),
+        "final_mp_weight": parsed.get("final_mp_weight"),
         "arbitration_reason": parsed.get("arbitration_reason"),
         "confidence": parsed.get("confidence"),
         "need_human_review": parsed.get("need_human_review"),
@@ -139,6 +146,9 @@ def complete_record(
         "model_provider": provider,
         "model_name": model_name,
         "prompt_version": config.STAGE2_ARBITRATION_PROMPT_VERSION,
+        "prompt_sha256": prompt_sha256,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+        "normalization_version": config.IMPACT_LABEL_SCHEMA_VERSION,
         "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
         "run_id": run_id,
         "created_at": utc_timestamp(),
@@ -156,6 +166,7 @@ def review_one(
     model_name: str,
     base_url: str | None,
     run_id: str,
+    prompt_sha256: str,
 ) -> dict[str, Any]:
     base_prompt = render_prompt(template, prompt_row(row))
     last_raw = ""
@@ -204,6 +215,7 @@ def review_one(
                         provider=provider,
                         model_name=model_name,
                         run_id=run_id,
+                        prompt_sha256=prompt_sha256,
                     )
                 last_parse_status = "ok"
                 last_validation_status = status
@@ -225,13 +237,22 @@ def review_one(
         provider=provider,
         model_name=model_name,
         run_id=run_id,
+        prompt_sha256=prompt_sha256,
     )
 
 
 def empty_outputs() -> None:
     write_csv(pd.DataFrame(columns=ARBITRATION_COLUMNS), config.STAGE2_ARBITRATION_RESULTS_PATH)
     write_csv(
-        pd.DataFrame(columns=["provision_id", "review_context_hash", *HUMAN_FIELDS]),
+        pd.DataFrame(
+            columns=[
+                "provision_id",
+                "review_context_hash",
+                "impact_label_schema_version",
+                "normalization_version",
+                *HUMAN_FIELDS,
+            ]
+        ),
         config.STAGE2_MANUAL_REVIEW_QUEUE_PATH,
     )
 
@@ -262,9 +283,10 @@ def run(
         empty_outputs()
         print("Stage 2 type conflict queue is empty; wrote empty arbitration/manual review files.")
         return
+    assert_impact_label_schema(queue, "Stage 2 type conflict queue")
     queue = queue.copy()
     queue["review_context_hash"] = queue.apply(context_hash_for_row, axis=1)
-    template = ensure_prompt(resolve_project_path(prompt_path))
+    template, prompt_sha256 = ensure_prompt(resolve_project_path(prompt_path))
 
     if not resume and config.STAGE2_ARBITRATION_RESULTS_PATH.exists():
         config.STAGE2_ARBITRATION_RESULTS_PATH.unlink()
@@ -279,6 +301,13 @@ def run(
             existing["validation_status"].eq("ok")
             & existing["parse_status"].eq("ok")
             & existing["prompt_version"].eq(config.STAGE2_ARBITRATION_PROMPT_VERSION)
+            & existing["prompt_sha256"].eq(prompt_sha256)
+            & existing["impact_label_schema_version"].eq(
+                config.IMPACT_LABEL_SCHEMA_VERSION
+            )
+            & existing["normalization_version"].eq(
+                config.IMPACT_LABEL_SCHEMA_VERSION
+            )
             & existing["pipeline_schema_version"].eq(config.PIPELINE_SCHEMA_VERSION)
             & existing["model_provider"].eq(provider)
             & existing["model_name"].eq(model_name)
@@ -309,6 +338,7 @@ def run(
             model_name=model_name,
             base_url=base_url,
             run_id=run_id,
+            prompt_sha256=prompt_sha256,
         )
         rows.append(result)
         if index == 1 or index % 25 == 0 or index == len(pending):
@@ -340,6 +370,8 @@ def run(
         else pd.DataFrame()
     )
     manual_queue = merge_existing_manual_review(manual_queue, existing_manual, HUMAN_FIELDS)
+    manual_queue["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
+    manual_queue["normalization_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
     write_csv(manual_queue, config.STAGE2_MANUAL_REVIEW_QUEUE_PATH)
     print(f"Wrote Stage 2 arbitration results to {config.STAGE2_ARBITRATION_RESULTS_PATH}")
     print(f"Wrote {len(manual_queue):,} Stage 2 manual review rows to {config.STAGE2_MANUAL_REVIEW_QUEUE_PATH}")

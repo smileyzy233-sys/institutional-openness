@@ -9,7 +9,13 @@ import numpy as np
 import pandas as pd
 
 import config
-from utils import ensure_directories, read_csv, write_csv, write_table_manifest
+from utils import (
+    assert_impact_label_schema,
+    ensure_directories,
+    read_csv,
+    write_csv,
+    write_table_manifest,
+)
 
 
 ISO_ALIASES = {
@@ -32,7 +38,7 @@ ICIO_2019_CROSSCHECK_FIELDS = [
     "year",
     "trade_agreement_dummy",
     "raw_trade_score",
-    "raw_investment_score",
+    "raw_mp_score",
     "num_active_agreements",
     "agreement_id_list",
     "WBID_list",
@@ -53,6 +59,7 @@ def validate_country_pair_input() -> None:
     versions = set(pair_indices["pipeline_schema_version"].dropna().astype(str))
     if versions != {config.PIPELINE_SCHEMA_VERSION}:
         raise ValueError(f"country pair indices schema mismatch: {sorted(versions)}")
+    assert_impact_label_schema(pair_indices, "country_pair_year_indices.csv")
     if "coverage_matrix_schema_version" not in pair_indices.columns:
         raise ValueError("country_pair_year_indices.csv missing coverage_matrix_schema_version")
     coverage_versions = set(pair_indices["coverage_matrix_schema_version"].dropna().astype(str))
@@ -202,7 +209,7 @@ def attach_raw_scores(
     active: pd.DataFrame, pair_scores: pd.DataFrame, aliases: dict[str, str]
 ) -> pd.DataFrame:
     """Attach direction-invariant raw scores to active DTA pair-years."""
-    required = {"iso1", "iso2", "year", "raw_trade_score", "raw_investment_score"}
+    required = {"iso1", "iso2", "year", "raw_trade_score", "raw_mp_score"}
     missing = required - set(pair_scores.columns)
     if missing:
         raise ValueError(
@@ -222,15 +229,15 @@ def attach_raw_scores(
     scores["raw_trade_score"] = pd.to_numeric(
         scores["raw_trade_score"], errors="coerce"
     )
-    scores["raw_investment_score"] = pd.to_numeric(
-        scores["raw_investment_score"], errors="coerce"
+    scores["raw_mp_score"] = pd.to_numeric(
+        scores["raw_mp_score"], errors="coerce"
     )
     scores = scores[
         scores["iso1"].ne("")
         & scores["iso2"].ne("")
         & scores["year"].notna()
         & scores["raw_trade_score"].notna()
-        & scores["raw_investment_score"].notna()
+        & scores["raw_mp_score"].notna()
     ].copy()
     scores["year"] = scores["year"].astype(int)
     scores = scores.drop(
@@ -239,7 +246,7 @@ def attach_raw_scores(
     )
     scores = pd.concat([scores, make_pair_key(scores, "iso1", "iso2")], axis=1)
 
-    score_columns = ["raw_trade_score", "raw_investment_score"]
+    score_columns = ["raw_trade_score", "raw_mp_score"]
     conflicts = scores.groupby(["pair_key", "year"])[score_columns].nunique(dropna=False)
     if conflicts.gt(1).any(axis=1).any():
         examples = conflicts.loc[conflicts.gt(1).any(axis=1)].head().index.tolist()
@@ -450,7 +457,7 @@ def build_icio_economies_all_years_panel(
         "agreement_applicable",
         "trade_agreement_dummy",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "num_active_agreements",
         "agreement_id_list",
         "WBID_list",
@@ -496,13 +503,13 @@ def count_2019_crosscheck_mismatches(
             frame[column] = frame[column].fillna("").astype(str)
         for column in integer_columns:
             frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0).astype(int)
-        for column in ["raw_trade_score", "raw_investment_score"]:
+        for column in ["raw_trade_score", "raw_mp_score"]:
             frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0.0)
     exact_columns = [column for column in current.columns if not column.startswith("raw_")]
     mismatch = current[exact_columns].ne(legacy[exact_columns]).any(axis=1)
     mismatch |= ~np.isclose(current["raw_trade_score"], legacy["raw_trade_score"])
     mismatch |= ~np.isclose(
-        current["raw_investment_score"], legacy["raw_investment_score"]
+        current["raw_mp_score"], legacy["raw_mp_score"]
     )
     return int(mismatch.sum())
 
@@ -516,7 +523,7 @@ def attach_agreement_data(
         "year",
         "trade_agreement_dummy",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "num_active_agreements",
         "agreement_id_list",
         "WBID_list",
@@ -531,7 +538,7 @@ def attach_agreement_data(
 
     out["agreement_applicable"] = applicable.astype("int8")
     out["trade_agreement_dummy"] = matched.where(applicable, False).astype("int8")
-    for column in ["raw_trade_score", "raw_investment_score"]:
+    for column in ["raw_trade_score", "raw_mp_score"]:
         out[column] = (
             pd.to_numeric(out[column], errors="coerce")
             .fillna(0.0)
@@ -580,7 +587,7 @@ def build_icio_pair_year(icio: pd.DataFrame, active: pd.DataFrame) -> pd.DataFra
         "agreement_applicable",
         "trade_agreement_dummy",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "num_active_agreements",
         "agreement_id_list",
         "WBID_list",
@@ -619,7 +626,7 @@ def build_expanded_union(
         "year",
         "trade_agreement_dummy",
         "raw_trade_score",
-        "raw_investment_score",
+        "raw_mp_score",
         "num_active_agreements",
         "agreement_id_list",
         "WBID_list",
@@ -631,7 +638,7 @@ def build_expanded_union(
     union["trade_agreement_dummy"] = (
         union["trade_agreement_dummy"].fillna(0).astype("int8")
     )
-    for column in ["raw_trade_score", "raw_investment_score"]:
+    for column in ["raw_trade_score", "raw_mp_score"]:
         union[column] = pd.to_numeric(union[column], errors="coerce").fillna(0.0)
     union["num_active_agreements"] = (
         union["num_active_agreements"].fillna(0).astype("int32")
@@ -831,7 +838,7 @@ def validate_outputs(
         raise AssertionError("Dummy differs across directions of the same pair-year")
     if active.empty or not active["trade_agreement_dummy"].eq(1).all():
         raise AssertionError("DTA active output must contain only dummy = 1")
-    if active[["raw_trade_score", "raw_investment_score"]].isna().any().any():
+    if active[["raw_trade_score", "raw_mp_score"]].isna().any().any():
         raise AssertionError("DTA active output contains missing raw scores")
     if active["pair_a"].eq(active["pair_b"]).any():
         raise AssertionError("DTA active output must not contain domestic pairs")
@@ -868,7 +875,7 @@ def validate_outputs(
         [
             "trade_agreement_dummy",
             "raw_trade_score",
-            "raw_investment_score",
+            "raw_mp_score",
             "num_active_agreements",
             "agreement_id_list",
             "idealpoint_abs_distance",
@@ -877,7 +884,7 @@ def validate_outputs(
     assert symmetry.le(1).all().all()
     inactive = all_years_panel["trade_agreement_dummy"].eq(0)
     assert all_years_panel.loc[inactive, "raw_trade_score"].eq(0).all()
-    assert all_years_panel.loc[inactive, "raw_investment_score"].eq(0).all()
+    assert all_years_panel.loc[inactive, "raw_mp_score"].eq(0).all()
     assert count_2019_crosscheck_mismatches(
         all_years_panel, pair_year, set(sample["iso_code"])
     ) == 0
@@ -919,6 +926,8 @@ def run() -> None:
         expanded,
         mismatch,
     )
+    for output in (active, pair_year, all_years_panel, expanded, diagnostics, mismatch):
+        output["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
 
     validate_outputs(
         pair_year,

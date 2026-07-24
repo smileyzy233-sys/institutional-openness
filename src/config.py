@@ -5,6 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 PIPELINE_SCHEMA_VERSION = "3.0"
 COVERAGE_MATRIX_SCHEMA_VERSION = "fractional_coverage_v1"
+IMPACT_LABEL_SCHEMA_VERSION = "trade_mp_v1"
 
 RAW_DATA_PATH = PROJECT_ROOT / "data" / "raw" / "DTA 2.0 - Vertical Content (v2)_code.xlsx"
 
@@ -115,14 +116,14 @@ STAGE1A_PROMPT_PATH = PROMPT_DIR / "stage1a_institutional.txt"
 STAGE1A_ARBITRATION_PROMPT_PATH = PROMPT_DIR / "stage1a_arbitration.txt"
 STAGE1B_PROMPT_PATH = PROMPT_DIR / "stage1b_dimension.txt"
 STAGE1B_ARBITRATION_PROMPT_PATH = PROMPT_DIR / "stage1b_arbitration.txt"
-STAGE2_PROMPT_PATH = PROMPT_DIR / "stage2_trade_investment.txt"
+STAGE2_PROMPT_PATH = PROMPT_DIR / "stage2_trade_mp.txt"
 STAGE2_ARBITRATION_PROMPT_PATH = PROMPT_DIR / "stage2_type_arbitration.txt"
 STAGE1A_PROMPT_VERSION = "v1_zh_stage1a_institutional_split"
 STAGE1A_ARBITRATION_PROMPT_VERSION = "v1_zh_stage1a_arbitration_split"
 STAGE1B_PROMPT_VERSION = "v1_zh_stage1b_dimension_split"
 STAGE1B_ARBITRATION_PROMPT_VERSION = "v1_zh_stage1b_arbitration_split"
-STAGE2_PROMPT_VERSION = "v3_zh_stage2_trade_invest"
-STAGE2_ARBITRATION_PROMPT_VERSION = "v3_zh_stage2_type_arbitration"
+STAGE2_PROMPT_VERSION = "v4_zh_stage2_trade_mp"
+STAGE2_ARBITRATION_PROMPT_VERSION = "v4_zh_stage2_type_trade_mp"
 
 MODEL_A_PROVIDER = "deepseek"
 MODEL_A_NAME = "deepseek-v4-pro"
@@ -186,14 +187,14 @@ DIMENSION_VALUES = {
 INSTITUTIONAL_DIMENSION_VALUES = DIMENSION_VALUES - {"none"}
 
 IMPACT_TYPE_VALUES = {
+    "trade",
     "mp",
-    "tr",
     "both",
     "none",
 }
 FIXED_TYPE_WEIGHTS = {
-    "mp": (1.0, 0.0),
-    "tr": (0.0, 1.0),
+    "trade": (1.0, 0.0),
+    "mp": (0.0, 1.0),
     "none": (0.0, 0.0),
 }
 OLD_SIX_CLASSIFICATION_VALUES = {

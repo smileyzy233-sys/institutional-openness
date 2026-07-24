@@ -11,9 +11,9 @@ def stage2_row(pid, impact, t, i, role, stage1_hash):
         "final_dominant_dimension": "rules",
         "impact_type": impact,
         "raw_trade_weight": t,
-        "raw_investment_weight": i,
+        "raw_mp_weight": i,
         "normalized_trade_weight": t,
-        "normalized_investment_weight": i,
+        "normalized_mp_weight": i,
         "reason": "r",
         "confidence": 0.8,
         "parse_status": "ok",
@@ -24,6 +24,8 @@ def stage2_row(pid, impact, t, i, role, stage1_hash):
         "prompt_version": config.STAGE2_PROMPT_VERSION,
         "stage1_final_sha256": stage1_hash,
         "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+        "normalization_version": config.IMPACT_LABEL_SCHEMA_VERSION,
         "run_id": "test",
         "raw_response": "{}",
     }
@@ -47,11 +49,11 @@ def test_stage2_compare_only_type_triggers_arbitration(temp_pipeline):
     )
     stage1_hash = write_stage1_success_manifest(stage1_final)
     write_csv(
-        pd.DataFrame([stage2_row("P1", "both", 0.7, 0.3, "A", stage1_hash), stage2_row("P2", "mp", 1.0, 0.0, "A", stage1_hash)]),
+        pd.DataFrame([stage2_row("P1", "both", 0.7, 0.3, "A", stage1_hash), stage2_row("P2", "trade", 1.0, 0.0, "A", stage1_hash)]),
         config.STAGE2_MODEL_A_RESULTS_PATH,
     )
     write_csv(
-        pd.DataFrame([stage2_row("P1", "both", 0.2, 0.8, "B", stage1_hash), stage2_row("P2", "tr", 0.0, 1.0, "B", stage1_hash)]),
+        pd.DataFrame([stage2_row("P1", "both", 0.2, 0.8, "B", stage1_hash), stage2_row("P2", "mp", 0.0, 1.0, "B", stage1_hash)]),
         config.STAGE2_MODEL_B_RESULTS_PATH,
     )
     load_script("08_stage2_compare_dual_model_results.py").run()
