@@ -7,8 +7,10 @@ __pycache__/
 logs/
 manifests/
 
-data
+data/
 ideapoint
 old data
 result
 result.zip
+control__variable
+Explained_variable
