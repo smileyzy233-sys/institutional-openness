@@ -26,6 +26,8 @@ LEGACY_ARTIFACTS_AVAILABLE = all(
         LEGACY_ROOT / "build_manifest.json",
         LEGACY_ROOT / "trade_y_x_cons_2019.csv",
         LEGACY_ROOT / "mp_y_x_cons_2019.csv",
+        PROJECT_ROOT / "result" / "regression_2019" / "trade_cost_2019_matched.csv",
+        PROJECT_ROOT / "result" / "regression_2019" / "mp_cost_2019_matched.csv",
     ]
 )
 pytestmark = pytest.mark.skipif(
