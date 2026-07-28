@@ -39,7 +39,7 @@ def test_role_thinking_modes_are_sent_to_providers(monkeypatch) -> None:
 
 
 def test_stage1a_reuses_results_with_legacy_input_hashes() -> None:
-    stage1a = load_script("03_stage1a_llm_code_institutional.py")
+    stage1a = load_script("measure_x_02_stage1a_code_institutional.py")
     provisions = pd.DataFrame(
         [{"provision_id": "P1", "provision_text": "Market access commitments."}]
     )

@@ -66,7 +66,7 @@ def test_finalize_marks_non_institutional_not_applicable_and_averages_both(temp_
         ),
         config.STAGE2_COMPARISON_PATH,
     )
-    load_script("10_finalize_weights.py").run()
+    load_script("measure_x_14_finalize_provision_weights.py").run()
     final = pd.read_csv(config.FINAL_PROVISION_WEIGHTS_PATH, encoding=config.CSV_ENCODING).set_index("provision_id")
     assert final.loc["P2", "final_impact_type"] == "not_applicable"
     assert final.loc["P2", "effective_trade_weight"] == 0

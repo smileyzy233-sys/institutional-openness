@@ -10,7 +10,7 @@ from utils import read_csv, write_csv
 
 
 def test_loader_preserves_fractional_coverage_and_english_provision_text() -> None:
-    loader = load_script("01_load_dta.py")
+    loader = load_script("measure_x_01_load_dta.py")
     stata = pd.DataFrame(
         {
             "Area": ["Services", "Services"],
@@ -35,7 +35,7 @@ def test_loader_preserves_fractional_coverage_and_english_provision_text() -> No
 
 
 def test_loader_rejects_out_of_range_coverage() -> None:
-    loader = load_script("01_load_dta.py")
+    loader = load_script("measure_x_01_load_dta.py")
     stata = pd.DataFrame(
         {
             "Area": ["Services"],
@@ -92,7 +92,7 @@ def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline
         config.FINAL_PROVISION_WEIGHTS_PATH,
     )
 
-    load_script("11_compute_agreement_indices.py").run()
+    load_script("measure_x_15_compute_agreement_scores.py").run()
     out = read_csv(config.AGREEMENT_LEVEL_INDICES_PATH).iloc[0]
 
     assert out["raw_trade_score"] == pytest.approx(0.7)
@@ -107,7 +107,7 @@ def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline
 
 
 def test_country_pair_union_uses_maximum_fractional_coverage() -> None:
-    country_indices = load_script("12_compute_country_pair_indices.py")
+    country_indices = load_script("measure_x_16_compute_country_pair_year_scores.py")
     matrix_by_id = pd.DataFrame(
         {"P0001": [0.5, 0.75], "P0002": [1.0, 0.0]},
         index=["agree_1", "agree_2"],

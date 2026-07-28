@@ -1,113 +1,64 @@
-# DTA Institutional Opening Pipeline v2
+# DTA Institutional Opening Pipeline
 
-This project builds provision-level institutional-opening classifications and
-agreement / country-pair-year raw trade and investment scores from DTA 2.0.
+This project measures DTA institutional opening and constructs auditable model
+inputs. The code is split into three independently runnable pipelines:
 
-The v2 pipeline separates LLM coding into two strictly ordered stages.
+```mermaid
+flowchart LR
+    A["measure_x<br/>Measure raw_trade_score / raw_mp_score"] --> B["match_y_x<br/>Match ICIO/AMNE Y to raw X"]
+    B --> C["match_y_x_cons<br/>Match configured controls onto Y-X"]
+```
+
+The matching refactor does not run regressions and does not call any external
+model. Existing `result/regression_2019` files are read-only legacy baselines;
+new products are written under `result/model_inputs`.
 
 ## Setup
 
-Place the source workbook at:
-
-```text
-data/raw/DTA 2.0 - Vertical Content (v2).xlsx
-```
-
-Install dependencies and configure `.env` from `.env.example`:
+Install dependencies and configure model credentials from `.env.example`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Default LLM routing:
+The matching pipelines do not read `.env`. Model credentials are needed only
+when explicitly running the measurement stages that call external models.
 
-- Model A: `deepseek` provider, `deepseek-v4-pro`, official DeepSeek API.
-- Model B: `dashscope` provider, `qwen3.7-plus`, DashScope compatible API.
-- Arbitration: `dashscope` provider, `glm-5`, DashScope compatible API.
+## Main commands
 
-Thinking mode is explicitly disabled for models A, B, and arbitration.
-Arbitration sends `enable_thinking=false` through the DashScope
-OpenAI-compatible API.
-
-## Workflow
-
-Stage 1 classifies every provision for:
-
-- `is_institutional_opening`: `0` or `1`
-- `dominant_dimension`: `rules`, `regulation`, `management`, `standards`, or `none`
-
-If model A and model B differ on either Stage 1 field, the provision enters
-Stage 1 arbitration. Stage 1 does not classify trade/MP type and does
-not assign weights.
-
-Stage 2 starts only after the whole Stage 1 sample is finalized and
-`data/processed/STAGE1_SUCCESS` plus `manifests/stage1_manifest.json` are valid.
-Stage 2 only processes provisions whose final Stage 1 result is institutional
-opening.
-
-Stage 2 classifies:
-
-- `trade`: only institutional trade opening
-- `mp`: only multinational-production / cross-border-investment opening
-- `both`: both institutional trade and cross-border investment opening
-- `none`: institutional opening, but no direct trade or investment impact
-
-`trade` is the trade channel. `mp` is the multinational-production /
-investment channel. The formal naming contract is
-[`docs/trade_mp_naming_contract.md`](docs/trade_mp_naming_contract.md).
-
-`none` and `not_applicable` are different:
-
-- `none`: entered Stage 2, but has no direct trade/investment impact.
-- `not_applicable`: did not enter Stage 2 because Stage 1 final result was
-  non-institutional opening.
-
-Stage 2 arbitration only compares `impact_type`. If both models return `both`,
-weight differences never trigger arbitration; the final weights are the
-arithmetic mean of the two model weights.
-
-Fixed type weights are enforced in code:
-
-```text
-trade -> 1.0, 0.0
-mp    -> 0.0, 1.0
-none  -> 0.0, 0.0
-```
-
-Stage 2 and every downstream output carry
-`impact_label_schema_version=trade_mp_v1`. The global
-`pipeline_schema_version` remains `3.0` so existing Stage 1 manifests stay
-valid.
-
-## Commands
-
-Run the full workflow:
+Inspect the three pipelines without writing files:
 
 ```bash
-python run_pipeline.py all
+python run_pipeline.py measure-x --dry-run
+python run_pipeline.py match-y-x --years 2019 --dry-run
+python run_pipeline.py match-y-x-cons --years 2019 --control-spec trade_candidate_pool_v1 --dry-run
+python run_pipeline.py match-y-x-cons --years 2019 --control-spec mp_controls_v1 --dry-run
 ```
 
-Run an API-free structural workflow:
+Build the matching products:
 
 ```bash
-python run_pipeline.py all --llm-provider heuristic --force
+python run_pipeline.py match-y-x --years 2019
+python run_pipeline.py match-y-x-cons --years 2019 --control-spec trade_candidate_pool_v1
+python run_pipeline.py match-y-x-cons --years 2019 --control-spec mp_controls_v1
 ```
 
-The heuristic provider is for software validation only and must not be used as
-a research result.
+Existing output files are never overwritten unless `--force` is supplied.
+`--output-root` can redirect the complete matching output tree.
 
-Individual commands:
+The original Stage 1/Stage 2 commands remain available:
 
 ```bash
 python run_pipeline.py load
 python run_pipeline.py stage1
-python run_pipeline.py stage1 --model-role A
-python run_pipeline.py stage1 --model-role B
-python run_pipeline.py stage1-arbitrate
+python run_pipeline.py stage1a
+python run_pipeline.py stage1a-arbitrate
+python run_pipeline.py stage1a-finalize
+python run_pipeline.py stage1b
+python run_pipeline.py stage1b-arbitrate
+python run_pipeline.py stage1b-finalize
 python run_pipeline.py stage1-finalize
 python run_pipeline.py stage2
-python run_pipeline.py stage2 --model-role A
-python run_pipeline.py stage2 --model-role B
 python run_pipeline.py stage2-arbitrate
 python run_pipeline.py finalize
 python run_pipeline.py indices
@@ -115,111 +66,89 @@ python run_pipeline.py dummy
 python run_pipeline.py diagnostics
 ```
 
-The `all` command runs load, Stage 1 model A, Stage 1 model B, Stage 1 compare,
-Stage 1 arbitration, Stage 1 finalization, Stage 1 gate check, Stage 2 model A,
-Stage 2 model B, Stage 2 compare, Stage 2 arbitration, final weights, agreement
-indices, country-pair indices, trade agreement dummy, and diagnostics.
+`measure-x` without `--dry-run` runs the full measurement workflow and may call
+the configured models. It is not needed to reuse existing raw scores.
 
-## Human Review Priority
+## Matching configuration
 
-Final decision priority is:
+All years, source templates, aliases, row policy, output roots, Gravity
+columns, and control sets live in
+[`configs/matching_specs.json`](configs/matching_specs.json).
 
-```text
-completed human review
-> valid arbitration model result
-> dual-model consensus
-```
+Available control configurations:
 
-Unresolved provisions are blocking. The production setting is:
+- `legacy_2019_v1`: refactor comparison only.
+- `trade_candidate_pool_v1`: confirmed trade base controls plus an unselected
+  pool of trade-facilitation and cultural candidates.
+- `mp_controls_v1`: `trade_agreement_dummy` and
+  `idealpoint_abs_distance` only.
 
-```python
-ALLOW_UNRESOLVED = False
-```
-
-There is no model-A fallback for unresolved conflicts.
-
-Human review queues:
+The following are matched candidates, not final regression selections:
 
 ```text
-data/interim/stage1/stage1_manual_review_queue.csv
-data/interim/stage2/stage2_manual_review_queue.csv
+entry_cost_o / entry_cost_d
+entry_proc_o / entry_proc_d
+entry_time_o / entry_time_d
+entry_tp_o / entry_tp_d
+comlang_off
+comrelig
+cultural_distance_religion
 ```
 
-## Core Outputs
+No `sample_trade_main` or `sample_mp_main` flag is generated by the candidate
+pipeline.
+
+## Main outputs
+
+Control-free Y-X:
 
 ```text
-data/interim/stage1/stage1_model_a_results.csv
-data/interim/stage1/stage1_model_b_results.csv
-data/interim/stage1/stage1_dual_model_comparison.csv
-data/interim/stage1/stage1_conflict_queue.csv
-data/interim/stage1/stage1_arbitration_results.csv
-data/processed/stage1_final_classification.csv
-data/processed/STAGE1_SUCCESS
-manifests/stage1_manifest.json
-
-data/interim/stage2/stage2_model_a_results.csv
-data/interim/stage2/stage2_model_b_results.csv
-data/interim/stage2/stage2_dual_model_comparison.csv
-data/interim/stage2/stage2_type_conflict_queue.csv
-data/interim/stage2/stage2_arbitration_results.csv
-data/processed/final_provision_weights.csv
-
-data/processed/agreement_level_indices.csv
-data/processed/country_pair_year_indices.csv
-data/processed/dta_active_agreement_dummy_all_dta_pair_year.csv
-data/processed/trade_dummy_icio_all_years.csv
-data/processed/trade_dummy_icio2019.csv
-data/processed/trade_dummy_union_panel.csv
-data/processed/trade_dummy_diagnostics.csv
-data/processed/trade_dummy_code_mismatch.csv
-data/processed/diagnostics_summary.csv
+result/model_inputs/match_y_x/2019/
+  trade_y_x_2019.csv
+  trade_y_x_2019.dta
+  mp_y_x_2019.csv
+  mp_y_x_2019.dta
+  matching_diagnostics.json
+  build_manifest.json
 ```
 
-Agreement and country-pair-year scripts continue to use:
+Configured controls:
 
 ```text
-effective_trade_weight
-effective_mp_weight
+result/model_inputs/match_y_x_cons/trade_candidate_pool_v1/2019/
+result/model_inputs/match_y_x_cons/mp_controls_v1/2019/
 ```
 
-The old six-category weight types are not valid v2 inputs:
+Each configured-control directory includes the CSV/DTA dataset, merge
+diagnostics, a variable dictionary, a build manifest, and a README.
+
+The pre-refactor hashes and structural statistics are recorded in:
 
 ```text
-trade_only
-trade_dominant_dual
-balanced_dual
-investment_dominant_dual
-investment_only
-irrelevant
+result/refactor_baseline/baseline_manifest_2019.json
 ```
 
-If these values are detected in v2 inputs, the pipeline raises an explicit
-"detected old workflow result" error instead of silently reusing them.
+## Data rules
 
-## Trade Agreement Dummy
+- The directed Y key is `year + iso_o + iso_d + sector_amne`.
+- The X/control merge key is `year + iso_o_match + iso_d_match`.
+- Original `iso_o`/`iso_d` are preserved.
+- `ROM -> ROU` applies only to the matching fields.
+- ROW observations are removed; domestic flows are retained.
+- Domestic raw trade/MP scores and the agreement dummy remain zero.
+- Missing tariffs, political distance, Gravity values, and candidates are not
+  filled with zero.
+- ICIO sector 20 remains missing for tariff.
 
-Place `icio2019.dta` at:
-
-```text
-data/need_dummy/icio2019.dta
-```
-
-Then run:
-
-```bash
-python run_pipeline.py dummy
-```
-
-The dummy construction keeps the previous undirected country-pair logic. Active
-pair-years receive raw scores from the active agreement set; pair-years without
-an active agreement and domestic observations receive zero scores.
+Detailed contracts are in
+[`docs/pipeline_naming_and_data_contract.md`](docs/pipeline_naming_and_data_contract.md)
+and [`docs/matching_workflow.md`](docs/matching_workflow.md).
 
 ## Tests
-
-Run:
 
 ```bash
 python -m pytest -q
 ```
 
-The test suite uses mock CSVs and does not call remote models.
+The suite uses local fixtures and optionally validates locally generated,
+gitignored 2019 integration outputs. It never calls remote models.

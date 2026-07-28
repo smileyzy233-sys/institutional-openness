@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -16,6 +17,9 @@ from utils import check_stage1_gate, check_stage1a_gate, check_stage1b_gate  # n
 
 
 COMMANDS = {
+    "measure-x",
+    "match-y-x",
+    "match-y-x-cons",
     "load",
     "stage1a",
     "stage1a-arbitrate",
@@ -34,6 +38,26 @@ COMMANDS = {
     "diagnostics",
     "all",
 }
+
+MEASURE_X_SCRIPT_ORDER = [
+    "measure_x_01_load_dta.py",
+    "measure_x_02_stage1a_code_institutional.py",
+    "measure_x_03_stage1a_compare_models.py",
+    "measure_x_04_stage1a_arbitrate_conflicts.py",
+    "measure_x_05_stage1a_finalize.py",
+    "measure_x_06_stage1b_code_dimension.py",
+    "measure_x_07_stage1b_compare_models.py",
+    "measure_x_08_stage1b_arbitrate_conflicts.py",
+    "measure_x_09_stage1b_finalize.py",
+    "measure_x_10_stage1_finalize.py",
+    "measure_x_11_stage2_code_trade_mp.py",
+    "measure_x_12_stage2_compare_models.py",
+    "measure_x_13_stage2_arbitrate_conflicts.py",
+    "measure_x_14_finalize_provision_weights.py",
+    "measure_x_15_compute_agreement_scores.py",
+    "measure_x_16_compute_country_pair_year_scores.py",
+    "measure_x_17_validate_outputs.py",
+]
 
 
 def load_script(filename: str):
@@ -74,7 +98,7 @@ def model_settings(args: argparse.Namespace, role: str) -> tuple[str, str, str |
 
 def run_stage1a_model(args: argparse.Namespace, role: str) -> None:
     provider, model, base_url = model_settings(args, role)
-    load_script("03_stage1a_llm_code_institutional.py").run(
+    load_script("measure_x_02_stage1a_code_institutional.py").run(
         model_role=role,
         provider=provider,
         model_name=model,
@@ -86,7 +110,7 @@ def run_stage1a_model(args: argparse.Namespace, role: str) -> None:
 
 def run_stage1b_model(args: argparse.Namespace, role: str) -> None:
     provider, model, base_url = model_settings(args, role)
-    load_script("03_stage1b_llm_code_dimension.py").run(
+    load_script("measure_x_06_stage1b_code_dimension.py").run(
         model_role=role,
         provider=provider,
         model_name=model,
@@ -98,7 +122,7 @@ def run_stage1b_model(args: argparse.Namespace, role: str) -> None:
 
 def run_stage2_model(args: argparse.Namespace, role: str) -> None:
     provider, model, base_url = model_settings(args, role)
-    load_script("07_stage2_llm_code_trade_mp.py").run(
+    load_script("measure_x_11_stage2_code_trade_mp.py").run(
         model_role=role,
         provider=provider,
         model_name=model,
@@ -110,7 +134,7 @@ def run_stage2_model(args: argparse.Namespace, role: str) -> None:
 
 def run_stage1a_arbitration(args: argparse.Namespace) -> None:
     provider, model, base_url = model_settings(args, "ARBITRATION")
-    load_script("05_stage1a_llm_review_conflicts.py").run(
+    load_script("measure_x_04_stage1a_arbitrate_conflicts.py").run(
         provider=provider,
         model_name=model,
         base_url=base_url,
@@ -120,7 +144,7 @@ def run_stage1a_arbitration(args: argparse.Namespace) -> None:
 
 def run_stage1b_arbitration(args: argparse.Namespace) -> None:
     provider, model, base_url = model_settings(args, "ARBITRATION")
-    load_script("05_stage1b_llm_review_conflicts.py").run(
+    load_script("measure_x_08_stage1b_arbitrate_conflicts.py").run(
         provider=provider,
         model_name=model,
         base_url=base_url,
@@ -130,7 +154,7 @@ def run_stage1b_arbitration(args: argparse.Namespace) -> None:
 
 def run_stage2_arbitration(args: argparse.Namespace) -> None:
     provider, model, base_url = model_settings(args, "ARBITRATION")
-    load_script("09_stage2_llm_review_conflicts.py").run(
+    load_script("measure_x_13_stage2_arbitrate_conflicts.py").run(
         provider=provider,
         model_name=model,
         base_url=base_url,
@@ -152,19 +176,54 @@ def validate_limit_usage(command: str, args: argparse.Namespace) -> None:
 
 def run_command(command: str, args: argparse.Namespace) -> None:
     validate_limit_usage(command, args)
-    if command == "load":
-        load_script("01_load_dta.py").run()
+    if command == "measure-x":
+        if args.dry_run:
+            print(
+                json.dumps(
+                    {
+                        "pipeline": "measure_x",
+                        "dry_run": True,
+                        "steps": MEASURE_X_SCRIPT_ORDER,
+                        "note": "No model or arbitration call was made.",
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            for label, step in measure_x_steps(args):
+                print(f"\n=== Running: {label} ===")
+                step()
+    elif command == "match-y-x":
+        load_script("match_y_x_06_validate_export.py").run(
+            years=args.years,
+            output_root=args.output_root,
+            dry_run=args.dry_run,
+            force=args.force,
+        )
+    elif command == "match-y-x-cons":
+        if not args.control_spec:
+            raise SystemExit("--control-spec is required with match-y-x-cons")
+        load_script("match_y_x_cons_07_validate_export.py").run(
+            years=args.years,
+            control_spec=args.control_spec,
+            output_root=args.output_root,
+            dry_run=args.dry_run,
+            force=args.force,
+        )
+    elif command == "load":
+        load_script("measure_x_01_load_dta.py").run()
     elif command == "stage1a":
         if args.model_role:
             run_stage1a_model(args, args.model_role)
         else:
             run_stage1a_model(args, "A")
             run_stage1a_model(args, "B")
-            load_script("04_stage1a_compare_dual_model_results.py").run()
+            load_script("measure_x_03_stage1a_compare_models.py").run()
     elif command == "stage1a-arbitrate":
         run_stage1a_arbitration(args)
     elif command == "stage1a-finalize":
-        load_script("06_stage1a_finalize.py").run(allow_unresolved=False)
+        load_script("measure_x_05_stage1a_finalize.py").run(allow_unresolved=False)
         check_stage1a_gate()
     elif command == "stage1b":
         check_stage1a_gate()
@@ -173,14 +232,14 @@ def run_command(command: str, args: argparse.Namespace) -> None:
         else:
             run_stage1b_model(args, "A")
             run_stage1b_model(args, "B")
-            load_script("04_stage1b_compare_dual_model_results.py").run()
+            load_script("measure_x_07_stage1b_compare_models.py").run()
     elif command == "stage1b-arbitrate":
         run_stage1b_arbitration(args)
     elif command == "stage1b-finalize":
-        load_script("06_stage1b_finalize.py").run(allow_unresolved=False)
+        load_script("measure_x_09_stage1b_finalize.py").run(allow_unresolved=False)
         check_stage1b_gate()
     elif command == "stage1-finalize":
-        load_script("06_stage1_finalize.py").run(allow_unresolved=False)
+        load_script("measure_x_10_stage1_finalize.py").run(allow_unresolved=False)
         check_stage1_gate()
     elif command == "stage1":
         run_stage1_sequence(args)
@@ -190,22 +249,26 @@ def run_command(command: str, args: argparse.Namespace) -> None:
         else:
             run_stage2_model(args, "A")
             run_stage2_model(args, "B")
-            load_script("08_stage2_compare_dual_model_results.py").run()
+            load_script("measure_x_12_stage2_compare_models.py").run()
     elif command == "stage2-arbitrate":
         run_stage2_arbitration(args)
     elif command == "finalize":
-        load_script("10_finalize_weights.py").run(allow_unresolved=False)
+        load_script("measure_x_14_finalize_provision_weights.py").run(
+            allow_unresolved=False
+        )
     elif command == "finalize-single-stage2":
         load_script("10_finalize_weights_single_stage2_model.py").run(
             model_role=args.model_role or "B"
         )
     elif command == "indices":
-        load_script("11_compute_agreement_indices.py").run()
-        load_script("12_compute_country_pair_indices.py").run(method=args.multi_agreement_method)
+        load_script("measure_x_15_compute_agreement_scores.py").run()
+        load_script("measure_x_16_compute_country_pair_year_scores.py").run(
+            method=args.multi_agreement_method
+        )
     elif command == "dummy":
         load_script("14_build_trade_agreement_dummy.py").run()
     elif command == "diagnostics":
-        load_script("13_diagnostics.py").run()
+        load_script("measure_x_17_validate_outputs.py").run()
     elif command == "all":
         run_all(args)
     else:
@@ -217,17 +280,38 @@ def stage1_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], None]
     return [
         ("Stage 1A model A", lambda: run_stage1a_model(args, "A")),
         ("Stage 1A model B", lambda: run_stage1a_model(args, "B")),
-        ("Stage 1A compare", lambda: load_script("04_stage1a_compare_dual_model_results.py").run()),
+        (
+            "Stage 1A compare",
+            lambda: load_script("measure_x_03_stage1a_compare_models.py").run(),
+        ),
         ("Stage 1A arbitration", lambda: run_stage1a_arbitration(args)),
-        ("Stage 1A finalize", lambda: load_script("06_stage1a_finalize.py").run(allow_unresolved=False)),
+        (
+            "Stage 1A finalize",
+            lambda: load_script("measure_x_05_stage1a_finalize.py").run(
+                allow_unresolved=False
+            ),
+        ),
         ("Stage 1A gate", check_stage1a_gate),
         ("Stage 1B model A", lambda: run_stage1b_model(args, "A")),
         ("Stage 1B model B", lambda: run_stage1b_model(args, "B")),
-        ("Stage 1B compare", lambda: load_script("04_stage1b_compare_dual_model_results.py").run()),
+        (
+            "Stage 1B compare",
+            lambda: load_script("measure_x_07_stage1b_compare_models.py").run(),
+        ),
         ("Stage 1B arbitration", lambda: run_stage1b_arbitration(args)),
-        ("Stage 1B finalize", lambda: load_script("06_stage1b_finalize.py").run(allow_unresolved=False)),
+        (
+            "Stage 1B finalize",
+            lambda: load_script("measure_x_09_stage1b_finalize.py").run(
+                allow_unresolved=False
+            ),
+        ),
         ("Stage 1B gate", check_stage1b_gate),
-        ("Stage 1 final merge", lambda: load_script("06_stage1_finalize.py").run(allow_unresolved=False)),
+        (
+            "Stage 1 final merge",
+            lambda: load_script("measure_x_10_stage1_finalize.py").run(
+                allow_unresolved=False
+            ),
+        ),
         ("Stage 1 gate", check_stage1_gate),
     ]
 
@@ -237,19 +321,87 @@ def run_stage1_sequence(args: argparse.Namespace) -> None:
         step()
 
 
+def measure_x_steps(
+    args: argparse.Namespace,
+) -> list[tuple[str, Callable[[], None]]]:
+    """Return the named measurement scripts in their fixed execution order."""
+    return [
+        ("measure_x_01_load_dta.py", lambda: load_script("measure_x_01_load_dta.py").run()),
+        *[
+            (label, fn)
+            for label, fn in stage1_steps(args)
+        ],
+        (
+            "measure_x_11_stage2_code_trade_mp.py (model A)",
+            lambda: run_stage2_model(args, "A"),
+        ),
+        (
+            "measure_x_11_stage2_code_trade_mp.py (model B)",
+            lambda: run_stage2_model(args, "B"),
+        ),
+        (
+            "measure_x_12_stage2_compare_models.py",
+            lambda: load_script("measure_x_12_stage2_compare_models.py").run(),
+        ),
+        (
+            "measure_x_13_stage2_arbitrate_conflicts.py",
+            lambda: run_stage2_arbitration(args),
+        ),
+        (
+            "measure_x_14_finalize_provision_weights.py",
+            lambda: load_script("measure_x_14_finalize_provision_weights.py").run(
+                allow_unresolved=False
+            ),
+        ),
+        (
+            "measure_x_15_compute_agreement_scores.py",
+            lambda: load_script("measure_x_15_compute_agreement_scores.py").run(),
+        ),
+        (
+            "measure_x_16_compute_country_pair_year_scores.py",
+            lambda: load_script(
+                "measure_x_16_compute_country_pair_year_scores.py"
+            ).run(method=args.multi_agreement_method),
+        ),
+        (
+            "measure_x_17_validate_outputs.py",
+            lambda: load_script("measure_x_17_validate_outputs.py").run(),
+        ),
+    ]
+
+
 def run_all(args: argparse.Namespace) -> None:
     ordered_steps = [
-        ("load DTA", lambda: load_script("01_load_dta.py").run()),
+        ("load DTA", lambda: load_script("measure_x_01_load_dta.py").run()),
         *stage1_steps(args),
         ("Stage 2 model A", lambda: run_stage2_model(args, "A")),
         ("Stage 2 model B", lambda: run_stage2_model(args, "B")),
-        ("Stage 2 compare", lambda: load_script("08_stage2_compare_dual_model_results.py").run()),
+        (
+            "Stage 2 compare",
+            lambda: load_script("measure_x_12_stage2_compare_models.py").run(),
+        ),
         ("Stage 2 arbitration", lambda: run_stage2_arbitration(args)),
-        ("final weights", lambda: load_script("10_finalize_weights.py").run(allow_unresolved=False)),
-        ("agreement indices", lambda: load_script("11_compute_agreement_indices.py").run()),
-        ("country-pair indices", lambda: load_script("12_compute_country_pair_indices.py").run(method=args.multi_agreement_method)),
+        (
+            "final weights",
+            lambda: load_script("measure_x_14_finalize_provision_weights.py").run(
+                allow_unresolved=False
+            ),
+        ),
+        (
+            "agreement indices",
+            lambda: load_script("measure_x_15_compute_agreement_scores.py").run(),
+        ),
+        (
+            "country-pair indices",
+            lambda: load_script(
+                "measure_x_16_compute_country_pair_year_scores.py"
+            ).run(method=args.multi_agreement_method),
+        ),
         ("trade agreement dummy", lambda: load_script("14_build_trade_agreement_dummy.py").run()),
-        ("diagnostics", lambda: load_script("13_diagnostics.py").run()),
+        (
+            "diagnostics",
+            lambda: load_script("measure_x_17_validate_outputs.py").run(),
+        ),
     ]
     for label, fn in ordered_steps:
         print(f"\n=== Running: {label} ===")
@@ -303,6 +455,28 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--years",
+        nargs="+",
+        type=int,
+        default=None,
+        help="Configured matching years, for example: --years 2019 2020.",
+    )
+    parser.add_argument(
+        "--control-spec",
+        default=None,
+        help="Control configuration name for match-y-x-cons.",
+    )
+    parser.add_argument(
+        "--output-root",
+        default=None,
+        help="Optional matching output root; relative paths resolve from the project root.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Resolve and validate a modular pipeline without writing outputs.",
+    )
     parser.add_argument(
         "--multi-agreement-method",
         default=config.MULTI_AGREEMENT_METHOD,

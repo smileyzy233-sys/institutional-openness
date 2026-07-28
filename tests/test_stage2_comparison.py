@@ -56,7 +56,7 @@ def test_stage2_compare_only_type_triggers_arbitration(temp_pipeline):
         pd.DataFrame([stage2_row("P1", "both", 0.2, 0.8, "B", stage1_hash), stage2_row("P2", "mp", 0.0, 1.0, "B", stage1_hash)]),
         config.STAGE2_MODEL_B_RESULTS_PATH,
     )
-    load_script("08_stage2_compare_dual_model_results.py").run()
+    load_script("measure_x_12_stage2_compare_models.py").run()
     comparison = pd.read_csv(config.STAGE2_COMPARISON_PATH, encoding=config.CSV_ENCODING)
     by_id = comparison.set_index("provision_id")
     assert not bool(by_id.loc["P1", "needs_arbitration"])

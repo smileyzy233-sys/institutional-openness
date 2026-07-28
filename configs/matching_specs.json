@@ -1,0 +1,156 @@
+{
+  "schema_version": "matching_specs_v1",
+  "years": [
+    2019
+  ],
+  "row_policy": {
+    "drop_row": true,
+    "keep_domestic": true
+  },
+  "iso_aliases": {
+    "ROM": "ROU"
+  },
+  "pair_year_source": "data/processed/trade_dummy_icio_2000_2023.csv",
+  "tariff_path_template": "control__variable/tariff_{year}.csv",
+  "gravity_path": "control__variable/Gravity_V202211.csv",
+  "output_root": "result/model_inputs",
+  "expected_pairs_per_year": 5776,
+  "equations": {
+    "trade": {
+      "dependent_path_template": "Explained_variable/icio{year}.dta",
+      "dependent_column": "value",
+      "x_column": "raw_trade_score"
+    },
+    "mp": {
+      "dependent_path_template": "Explained_variable/amne{year}.dta",
+      "dependent_column": "value",
+      "x_column": "raw_mp_score"
+    }
+  },
+  "gravity": {
+    "chunksize": 200000,
+    "read_columns": [
+      "year",
+      "iso3_o",
+      "iso3_d",
+      "country_exists_o",
+      "country_exists_d",
+      "entry_cost_o",
+      "entry_cost_d",
+      "entry_proc_o",
+      "entry_proc_d",
+      "entry_time_o",
+      "entry_time_d",
+      "entry_tp_o",
+      "entry_tp_d",
+      "comlang_off",
+      "comrelig"
+    ],
+    "candidate_controls": [
+      "entry_cost_o",
+      "entry_cost_d",
+      "entry_proc_o",
+      "entry_proc_d",
+      "entry_time_o",
+      "entry_time_d",
+      "entry_tp_o",
+      "entry_tp_d",
+      "comlang_off",
+      "comrelig",
+      "cultural_distance_religion"
+    ],
+    "derived_candidates": {
+      "cultural_distance_religion": "1 - comrelig"
+    }
+  },
+  "control_specs": {
+    "legacy_2019_v1": {
+      "description": "Regression-refactor comparison only; overlapping fields reproduce the delivered 2019 files and do not define the new research specification.",
+      "equations": [
+        "trade",
+        "mp"
+      ],
+      "trade": {
+        "selected_controls": [
+          "tariff",
+          "trade_agreement_dummy",
+          "idealpoint_abs_distance",
+          "comlang_off",
+          "cultural_distance_religion"
+        ],
+        "candidate_controls": [
+          "entry_cost_o",
+          "entry_cost_d",
+          "entry_proc_o",
+          "entry_proc_d",
+          "entry_time_o",
+          "entry_time_d",
+          "entry_tp_o",
+          "entry_tp_d",
+          "comrelig"
+        ]
+      },
+      "mp": {
+        "selected_controls": [
+          "trade_agreement_dummy",
+          "idealpoint_abs_distance"
+        ],
+        "candidate_controls": []
+      }
+    },
+    "trade_candidate_pool_v1": {
+      "description": "Trade equation with confirmed base controls plus an unselected pool of facilitation and cultural candidates.",
+      "equations": [
+        "trade"
+      ],
+      "trade": {
+        "selected_controls": [
+          "tariff",
+          "trade_agreement_dummy",
+          "idealpoint_abs_distance"
+        ],
+        "candidate_controls": [
+          "entry_cost_o",
+          "entry_cost_d",
+          "entry_proc_o",
+          "entry_proc_d",
+          "entry_time_o",
+          "entry_time_d",
+          "entry_tp_o",
+          "entry_tp_d",
+          "comlang_off",
+          "comrelig",
+          "cultural_distance_religion"
+        ]
+      }
+    },
+    "mp_controls_v1": {
+      "description": "MP equation controls fixed at the agreement dummy and bilateral political distance.",
+      "equations": [
+        "mp"
+      ],
+      "mp": {
+        "selected_controls": [
+          "trade_agreement_dummy",
+          "idealpoint_abs_distance"
+        ],
+        "candidate_controls": []
+      }
+    }
+  },
+  "acceptance": {
+    "2019": {
+      "trade_source_rows": 118580,
+      "trade_rows_after_row_policy": 115520,
+      "mp_source_rows": 243089,
+      "mp_rows_after_row_policy": 236816,
+      "trade_zero_rate_approx": 0.053454,
+      "mp_zero_rate_approx": 0.614291,
+      "tariff_sectors": [
+        1,
+        19
+      ],
+      "tariff_match_rate_approx": 0.95
+    }
+  }
+}

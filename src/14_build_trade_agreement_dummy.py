@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from match_y_x_common import normalize_iso3 as shared_normalize_iso3
 from utils import (
     assert_impact_label_schema,
     ensure_directories,
@@ -71,14 +72,9 @@ def validate_country_pair_input() -> None:
 
 
 def normalize_iso3(value: object, aliases: dict[str, str] | None = None) -> str:
-    """Normalize an ISO-like code while preserving unknown non-empty codes."""
-    if value is None or pd.isna(value):
-        return ""
-    text = str(value).strip().upper()
-    if not text or text in {"NAN", "NONE", "<NA>"}:
-        return ""
+    """Compatibility wrapper around the shared matching ISO normalizer."""
     mapping = ISO_ALIASES if aliases is None else aliases
-    return mapping.get(text, text)
+    return shared_normalize_iso3(value, mapping)
 
 
 def is_valid_iso3(value: object) -> bool:
