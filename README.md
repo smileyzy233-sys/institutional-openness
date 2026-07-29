@@ -150,8 +150,8 @@ result/refactor_baseline/baseline_manifest_2019.json
 - ICIO sector 20 remains missing for tariff.
 
 Detailed contracts are in
-[`docs/pipeline_naming_and_data_contract.md`](docs/pipeline_naming_and_data_contract.md)
-and [`docs/matching_workflow.md`](docs/matching_workflow.md).
+[`docs/流水线命名与数据契约.md`](docs/流水线命名与数据契约.md)
+and [`docs/匹配流程.md`](docs/匹配流程.md).
 
 ## Tests
 

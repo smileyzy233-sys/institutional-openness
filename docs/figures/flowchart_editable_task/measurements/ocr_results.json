@@ -1,6 +1,0 @@
-{
-  "engine": "paddleocr",
-  "status": "disabled",
-  "error": "PaddleOCR import failed: No module named 'paddleocr'",
-  "items": []
-}

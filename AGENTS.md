@@ -208,7 +208,7 @@ python -m pytest -q
 详细流程和数据契约见：
 
 ```text
-docs/pipeline_naming_and_data_contract.md
-docs/matching_workflow.md
-docs/trade_mp_naming_contract.md
+docs/流水线命名与数据契约.md
+docs/匹配流程.md
+docs/贸易与跨国生产命名契约.md
 ```
