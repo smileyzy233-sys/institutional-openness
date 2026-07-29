@@ -95,6 +95,7 @@ def temp_pipeline(monkeypatch, tmp_path):
         "AGREEMENT_LEVEL_INDICES_PATH": processed / "agreement_level_indices.csv",
         "COUNTRY_PAIR_YEAR_INDICES_PATH": processed / "country_pair_year_indices.csv",
         "DIAGNOSTICS_SUMMARY_PATH": processed / "diagnostics_summary.csv",
+        "ICIO_2000_2023_DUMMY_PATH": processed / "trade_dummy_icio_2000_2023.csv",
         "STAGE1A_PROMPT_PATH": prompts / "stage1a_institutional.txt",
         "STAGE1A_ARBITRATION_PROMPT_PATH": prompts / "stage1a_arbitration.txt",
         "STAGE1B_PROMPT_PATH": prompts / "stage1b_dimension.txt",

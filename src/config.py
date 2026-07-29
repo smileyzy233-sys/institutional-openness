@@ -99,6 +99,9 @@ ICIO_PAIR_YEAR_DUMMY_PATH = PROCESSED_DIR / "trade_dummy_icio2019.csv"
 ICIO_ECONOMIES_ALL_YEARS_DUMMY_PATH = (
     PROCESSED_DIR / "trade_dummy_icio_all_years.csv"
 )
+ICIO_2000_2023_DUMMY_PATH = (
+    PROCESSED_DIR / "trade_dummy_icio_2000_2023.csv"
+)
 EXPANDED_UNION_PAIR_YEAR_DUMMY_PATH = (
     PROCESSED_DIR / "trade_dummy_union_panel.csv"
 )

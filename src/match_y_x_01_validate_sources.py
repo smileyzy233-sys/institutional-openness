@@ -21,11 +21,13 @@ from match_y_x_common import (
 )
 
 
-DEPENDENT_REQUIRED = [
+DEPENDENT_CORE_REQUIRED = [
     "iso_o",
     "iso_d",
     "sector_amne",
     "value",
+]
+DEPENDENT_IDENTITY_COLUMNS = [
     "country_o",
     "country_d",
     "iso_o1",
@@ -68,7 +70,25 @@ def validate_sources(
                     f"{year}: {path}"
                 )
             data = pd.read_stata(path, convert_categoricals=False)
-            require_columns(data.columns, DEPENDENT_REQUIRED, str(path))
+            require_columns(data.columns, DEPENDENT_CORE_REQUIRED, str(path))
+            missing_identity = sorted(
+                set(DEPENDENT_IDENTITY_COLUMNS).difference(data.columns)
+            )
+            if missing_identity:
+                crosswalk_text = specs.get("dependent_identity_crosswalk")
+                if not crosswalk_text:
+                    raise ValueError(
+                        f"{path} is missing identity columns "
+                        f"{missing_identity}, and no crosswalk is configured"
+                    )
+                crosswalk_path = resolve_config_path(
+                    project_dir, str(crosswalk_text)
+                )
+                if not crosswalk_path.exists():
+                    raise FileNotFoundError(
+                        "Dependent-variable identity crosswalk not found: "
+                        f"{crosswalk_path}"
+                    )
             validate_unique(
                 data,
                 ["iso_o", "iso_d", "sector_amne"],
@@ -81,6 +101,7 @@ def validate_sources(
                     "path": str(path),
                     "rows": len(data),
                     "columns": list(data.columns),
+                    "derived_identity_columns": missing_identity,
                     "duplicate_keys": 0,
                 }
             )

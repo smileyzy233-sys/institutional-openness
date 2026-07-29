@@ -69,6 +69,15 @@ python run_pipeline.py diagnostics
 `measure-x` without `--dry-run` runs the full measurement workflow and may call
 the configured models. It is not needed to reuse existing raw scores.
 
+The `dummy` step also writes the matching source expected by
+`configs/matching_specs.json`:
+
+```text
+data/processed/trade_dummy_icio_2000_2023.csv
+```
+
+It is the exact 2000-2023 subset of `trade_dummy_icio_all_years.csv`.
+
 ## Matching configuration
 
 All years, source templates, aliases, row policy, output roots, Gravity

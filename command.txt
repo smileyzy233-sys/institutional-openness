@@ -1,14 +1,11 @@
-python run_pipeline.py load
-python run_pipeline.py stage1a --force
-python run_pipeline.py stage1a-arbitrate --force
-python run_pipeline.py stage1a-finalize
-python run_pipeline.py stage1b --force
-python run_pipeline.py stage1b-arbitrate --force
-python run_pipeline.py stage1b-finalize
-python run_pipeline.py stage1-finalize
-python run_pipeline.py stage2 --force
-python run_pipeline.py stage2-arbitrate --force
-python run_pipeline.py finalize
-python run_pipeline.py indices
-python run_pipeline.py dummy
-python run_pipeline.py diagnostics
+# 2000 年匹配：每步先预检，再正式生成
+python run_pipeline.py match-y-x --years 2000 --dry-run
+python run_pipeline.py match-y-x --years 2000
+
+python run_pipeline.py match-y-x-cons --years 2000 --control-spec trade_candidate_pool_v1 --dry-run
+python run_pipeline.py match-y-x-cons --years 2000 --control-spec trade_candidate_pool_v1
+
+python run_pipeline.py match-y-x-cons --years 2000 --control-spec mp_controls_v1 --dry-run
+python run_pipeline.py match-y-x-cons --years 2000 --control-spec mp_controls_v1
+
+# 重跑已有结果时，在对应正式命令末尾加 --force

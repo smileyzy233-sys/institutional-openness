@@ -1,16 +1,37 @@
+# Python caches and test artifacts
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .ipynb_checkpoints/
 
+# Local secrets
 .env
-logs/
-manifests/
 
-data/
-ideapoint
-old data
-result
-result.zip
-control__variable
-Explained_variable
+# Local datasets, source inputs, and generated outputs
+/data/
+/old data/
+/control__variable/
+/Explained_variable/
+/ideapoint/
+/result/
+/logs/
+/manifests/
+/migration_backups/
+/匹配中间节点/
+
+# Dataset formats should stay local even when placed outside the standard folders
+*.dta
+*.csv
+*.xls
+*.xlsx
+*.parquet
+*.feather
+*.sav
+*.sas7bdat
+*.h5
+*.hdf5
+
+# Generated archives and local Codex workspaces
+/result.zip
+/.codex-qa/
+/.codex_spreadsheet_work/

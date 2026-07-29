@@ -32,6 +32,8 @@ ICIO_YEAR = 2019
 EXPECTED_ICIO_ECONOMY_COUNT = 76
 EXPECTED_DTA_MIN_YEAR = 1958
 EXPECTED_DTA_MAX_YEAR = 2023
+MATCHING_MIN_YEAR = 2000
+MATCHING_MAX_YEAR = 2023
 ICIO_SAMPLE_SCOPE = "ICIO2019_economies_excluding_ROW"
 ICIO_2019_CROSSCHECK_FIELDS = [
     "iso_o",
@@ -817,9 +819,19 @@ def build_diagnostics(
     return pd.DataFrame({"metric": list(metrics.keys()), "value": list(metrics.values())})
 
 
+def build_matching_panel(all_years_panel: pd.DataFrame) -> pd.DataFrame:
+    """Return the configured 2000-2023 pair-year source used by matching."""
+    if "year" not in all_years_panel.columns:
+        raise ValueError("ICIO all-years panel is missing year")
+    return all_years_panel.loc[
+        all_years_panel["year"].between(MATCHING_MIN_YEAR, MATCHING_MAX_YEAR)
+    ].copy()
+
+
 def validate_outputs(
     pair_year: pd.DataFrame,
     all_years_panel: pd.DataFrame,
+    matching_panel: pd.DataFrame,
     sample: pd.DataFrame,
     excluded_codes: list[str],
     active: pd.DataFrame,
@@ -867,6 +879,19 @@ def validate_outputs(
         EXPECTED_ICIO_ECONOMY_COUNT ** 2
     ).all()
 
+    expected_matching_year_count = MATCHING_MAX_YEAR - MATCHING_MIN_YEAR + 1
+    expected_matching_rows = (
+        EXPECTED_ICIO_ECONOMY_COUNT ** 2 * expected_matching_year_count
+    )
+    assert len(matching_panel) == expected_matching_rows
+    assert matching_panel["year"].min() == MATCHING_MIN_YEAR
+    assert matching_panel["year"].max() == MATCHING_MAX_YEAR
+    assert matching_panel["year"].nunique() == expected_matching_year_count
+    assert matching_panel.duplicated(["iso_o", "iso_d", "year"]).sum() == 0
+    assert matching_panel.groupby("year").size().eq(
+        EXPECTED_ICIO_ECONOMY_COUNT ** 2
+    ).all()
+
     symmetry = all_years_panel.groupby(["pair_a", "pair_b", "year"])[
         [
             "trade_agreement_dummy",
@@ -910,6 +935,7 @@ def run() -> None:
     pair_year = build_icio_pair_year(icio, active)
     sample, excluded_codes = build_icio_economy_sample(icio, dta_source)
     all_years_panel = build_icio_economies_all_years_panel(sample, dta_source, active)
+    matching_panel = build_matching_panel(all_years_panel)
     expanded = build_expanded_union(dta_source, icio, active)
     mismatch = build_code_mismatch_report(dta_source, icio)
     diagnostics = build_diagnostics(
@@ -922,12 +948,21 @@ def run() -> None:
         expanded,
         mismatch,
     )
-    for output in (active, pair_year, all_years_panel, expanded, diagnostics, mismatch):
+    for output in (
+        active,
+        pair_year,
+        all_years_panel,
+        matching_panel,
+        expanded,
+        diagnostics,
+        mismatch,
+    ):
         output["impact_label_schema_version"] = config.IMPACT_LABEL_SCHEMA_VERSION
 
     validate_outputs(
         pair_year,
         all_years_panel,
+        matching_panel,
         sample,
         excluded_codes,
         active,
@@ -937,6 +972,7 @@ def run() -> None:
     write_csv(active, config.DTA_ACTIVE_AGREEMENT_DUMMY_PATH)
     write_csv(pair_year, config.ICIO_PAIR_YEAR_DUMMY_PATH)
     write_csv(all_years_panel, config.ICIO_ECONOMIES_ALL_YEARS_DUMMY_PATH)
+    write_csv(matching_panel, config.ICIO_2000_2023_DUMMY_PATH)
     write_csv(expanded, config.EXPANDED_UNION_PAIR_YEAR_DUMMY_PATH)
     write_csv(diagnostics, config.TRADE_AGREEMENT_DUMMY_DIAGNOSTICS_PATH)
     write_csv(mismatch, config.TRADE_AGREEMENT_DUMMY_CODE_REPORT_PATH)
@@ -947,6 +983,11 @@ def run() -> None:
     print(
         f"Wrote {len(all_years_panel):,} ICIO-sample directed pair-years "
         f"for {len(sample)} economies; excluded {excluded_codes}"
+    )
+    print(
+        f"Wrote {len(matching_panel):,} matching pair-years for "
+        f"{MATCHING_MIN_YEAR}-{MATCHING_MAX_YEAR} to "
+        f"{config.ICIO_2000_2023_DUMMY_PATH}"
     )
     print(f"Wrote {len(expanded):,} expanded union pair-years")
     print(f"Diagnostics: {config.TRADE_AGREEMENT_DUMMY_DIAGNOSTICS_PATH}")

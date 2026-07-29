@@ -88,7 +88,6 @@ def load_matching_specs(
         "iso_aliases",
         "equations",
         "pair_year_source",
-        "tariff_path_template",
         "gravity_path",
         "output_root",
         "control_specs",
@@ -98,11 +97,25 @@ def load_matching_specs(
         raise ValueError(f"Matching configuration is missing keys: {sorted(missing)}")
     for field in [
         "pair_year_source",
-        "tariff_path_template",
         "gravity_path",
         "output_root",
     ]:
         _assert_project_relative(str(specs[field]), field)
+    tariff_template = specs.get("tariff_path_template")
+    tariff_paths = specs.get("tariff_paths", {})
+    if tariff_template is None and not tariff_paths:
+        raise ValueError(
+            "Matching configuration requires tariff_path_template or tariff_paths"
+        )
+    if tariff_template is not None:
+        _assert_project_relative(str(tariff_template), "tariff_path_template")
+    for year, path_text in tariff_paths.items():
+        _assert_project_relative(str(path_text), f"tariff_paths.{year}")
+    identity_crosswalk = specs.get("dependent_identity_crosswalk")
+    if identity_crosswalk is not None:
+        _assert_project_relative(
+            str(identity_crosswalk), "dependent_identity_crosswalk"
+        )
     for equation, equation_spec in specs["equations"].items():
         if equation not in {"trade", "mp"}:
             raise ValueError(f"Unsupported equation in configuration: {equation}")
@@ -150,6 +163,21 @@ def resolve_config_path(
     rendered = path_template.format(year=year) if year is not None else path_template
     _assert_project_relative(rendered, "configured path")
     return (project_dir / rendered).resolve()
+
+
+def resolve_tariff_path(
+    project_dir: Path,
+    specs: dict[str, Any],
+    year: int,
+) -> Path:
+    """Resolve a year-specific tariff override, falling back to the template."""
+    override = specs.get("tariff_paths", {}).get(str(year))
+    if override is not None:
+        return resolve_config_path(project_dir, str(override))
+    template = specs.get("tariff_path_template")
+    if template is None:
+        raise ValueError(f"No tariff path is configured for {year}")
+    return resolve_config_path(project_dir, str(template), year=year)
 
 
 def resolve_output_root(

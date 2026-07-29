@@ -21,16 +21,84 @@ from match_y_x_common import (
 )
 
 
-DEPENDENT_REQUIRED = [
+DEPENDENT_CORE_REQUIRED = [
     "iso_o",
     "iso_d",
     "sector_amne",
     "value",
+]
+DEPENDENT_IDENTITY_COLUMNS = [
     "country_o",
     "country_d",
     "iso_o1",
     "iso_d1",
 ]
+
+
+def add_missing_identity_columns(
+    data: pd.DataFrame,
+    project_dir: Path,
+    specs: dict[str, Any],
+    source: Path,
+) -> pd.DataFrame:
+    missing = [
+        column for column in DEPENDENT_IDENTITY_COLUMNS if column not in data
+    ]
+    if not missing:
+        return data
+    crosswalk_text = specs.get("dependent_identity_crosswalk")
+    if not crosswalk_text:
+        raise ValueError(
+            f"{source} is missing identity columns {missing}, but "
+            "dependent_identity_crosswalk is not configured"
+        )
+    crosswalk_path = resolve_config_path(project_dir, str(crosswalk_text))
+    if not crosswalk_path.exists():
+        raise FileNotFoundError(
+            f"Dependent-variable identity crosswalk not found: {crosswalk_path}"
+        )
+    suffix = crosswalk_path.suffix.lower()
+    if suffix == ".dta":
+        crosswalk = pd.read_stata(
+            crosswalk_path, convert_categoricals=False
+        )
+    elif suffix == ".csv":
+        crosswalk = pd.read_csv(crosswalk_path, low_memory=False)
+    else:
+        raise ValueError(
+            f"Unsupported identity crosswalk format: {crosswalk_path.suffix}"
+        )
+    required = ["iso3_o", "country_o", "iso_o"]
+    require_columns(crosswalk.columns, required, str(crosswalk_path))
+    validate_unique(crosswalk, ["iso3_o"], str(crosswalk_path))
+    country_map = crosswalk.set_index("iso3_o")["country_o"]
+    numeric_map = crosswalk.set_index("iso3_o")["iso_o"]
+    out = data.copy()
+    derived = {
+        "country_o": out["iso_o"].map(country_map),
+        "country_d": out["iso_d"].map(country_map),
+        "iso_o1": out["iso_o"].map(numeric_map),
+        "iso_d1": out["iso_d"].map(numeric_map),
+    }
+    for column in missing:
+        out[column] = derived[column]
+        if out[column].isna().any():
+            code_column = (
+                "iso_o"
+                if column in {"country_o", "iso_o1"}
+                else "iso_d"
+            )
+            codes = (
+                out.loc[out[column].isna(), code_column]
+                .drop_duplicates()
+                .head(10)
+                .tolist()
+            )
+            raise ValueError(
+                f"Could not derive {column} from {crosswalk_path}; "
+                f"unmatched codes={codes}"
+            )
+    return out
 
 
 def prepare_y(
@@ -52,7 +120,13 @@ def prepare_y(
             f"Missing {equation.upper()} dependent-variable file for {year}: {path}"
         )
     data = pd.read_stata(path, convert_categoricals=False)
-    require_columns(data.columns, DEPENDENT_REQUIRED, str(path))
+    require_columns(data.columns, DEPENDENT_CORE_REQUIRED, str(path))
+    data = add_missing_identity_columns(data, project_dir, specs, path)
+    require_columns(
+        data.columns,
+        DEPENDENT_CORE_REQUIRED + DEPENDENT_IDENTITY_COLUMNS,
+        str(path),
+    )
     validate_unique(
         data,
         ["iso_o", "iso_d", "sector_amne"],
@@ -65,7 +139,9 @@ def prepare_y(
     if values.lt(0).any():
         raise ValueError(f"{path.name} contains negative {value_column} values")
 
-    out = data[DEPENDENT_REQUIRED].copy()
+    out = data[
+        DEPENDENT_CORE_REQUIRED + DEPENDENT_IDENTITY_COLUMNS
+    ].copy()
     out.insert(0, "year", np.int16(year))
     out[value_column] = values
     aliases = specs["iso_aliases"]

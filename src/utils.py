@@ -1200,6 +1200,9 @@ def write_table_manifest() -> None:
             "icio_economies_all_years_pair_year_dummy": str(
                 config.ICIO_ECONOMIES_ALL_YEARS_DUMMY_PATH
             ),
+            "icio_2000_2023_pair_year_dummy": str(
+                config.ICIO_2000_2023_DUMMY_PATH
+            ),
             "expanded_union_pair_year_dummy": str(
                 config.EXPANDED_UNION_PAIR_YEAR_DUMMY_PATH
             ),

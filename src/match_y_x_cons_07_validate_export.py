@@ -21,6 +21,7 @@ from match_y_x_common import (
     parse_year_arguments,
     project_directory,
     resolve_config_path,
+    resolve_tariff_path,
     resolve_years,
     validate_csv_dta_pair,
     validate_unique,
@@ -34,6 +35,9 @@ from match_y_x_cons_common import (
     get_control_spec,
     read_y_x_base,
 )
+
+
+TARIFF_KEY = ["year", "iso_o1", "iso_d1", "sector_amne"]
 
 
 def _equation_targets(paths: dict[str, Path], equations: list[str]) -> list[Path]:
@@ -137,6 +141,7 @@ def _legacy_overlap(
 
 
 def _dictionary_rows(
+    project_dir: Path,
     equation: str,
     data: pd.DataFrame,
     equation_spec: dict[str, Any],
@@ -149,7 +154,9 @@ def _dictionary_rows(
         "dependent_path_template"
     ].format(year=year)
     pair_path = specs["pair_year_source"]
-    tariff_path = specs["tariff_path_template"].format(year=year)
+    tariff_path = str(
+        resolve_tariff_path(project_dir, specs, year).relative_to(project_dir)
+    )
     gravity_path = specs["gravity_path"]
     rows: list[dict[str, Any]] = []
     for variable in data.columns:
@@ -368,7 +375,12 @@ def _write_year(
         )
         dictionary_rows.extend(
             _dictionary_rows(
-                equation, data, control_spec[equation], specs, year
+                project_dir,
+                equation,
+                data,
+                control_spec[equation],
+                specs,
+                year,
             )
         )
         diagnostics_rows.extend(
@@ -376,6 +388,26 @@ def _write_year(
                 equation, year, data, merge_diagnostics[equation]
             )
         )
+    tariff_diagnostics = source_diagnostics.get("tariff")
+    if isinstance(tariff_diagnostics, dict):
+        for check, value in tariff_diagnostics.items():
+            if check == "year":
+                continue
+            if isinstance(value, (list, dict)):
+                rendered_value: Any = json.dumps(value, ensure_ascii=False)
+            else:
+                rendered_value = value
+            diagnostics_rows.append(
+                {
+                    "equation": "trade",
+                    "year": year,
+                    "source": "tariff_preparation",
+                    "check": check,
+                    "value": rendered_value,
+                    "rate": np.nan,
+                    "note": "Tariff source and key-normalization diagnostic.",
+                }
+            )
     diagnostics = pd.DataFrame(diagnostics_rows)
     dictionary = pd.DataFrame(dictionary_rows)
     diagnostics.to_csv(paths["diagnostics"], index=False, encoding="utf-8-sig")
@@ -453,6 +485,7 @@ def _write_year(
         "selected_controls": selected_controls,
         "candidate_controls": candidate_controls,
         "transformations": specs["gravity"]["derived_candidates"],
+        "source_diagnostics": source_diagnostics,
         "code_commit_if_available": current_git_commit(project_dir),
         "legacy_overlap_validation": legacy or None,
     }
@@ -508,13 +541,94 @@ def _preflight_paths(
             raise FileNotFoundError(f"Missing Gravity controls: {gravity}")
         inputs.append(str(gravity))
         for year in years:
-            tariff = resolve_config_path(
-                project_dir, specs["tariff_path_template"], year=year
-            )
+            tariff = resolve_tariff_path(project_dir, specs, year)
             if not tariff.exists():
                 raise FileNotFoundError(f"Missing tariff controls: {tariff}")
             inputs.append(str(tariff))
     return {"inputs": inputs, "outputs": outputs}
+
+
+def _assert_numeric_integral_key(
+    series: pd.Series,
+    label: str,
+) -> None:
+    if not pd.api.types.is_numeric_dtype(series.dtype):
+        raise TypeError(f"{label} must be numeric; observed dtype={series.dtype}")
+    values = pd.to_numeric(series, errors="coerce").to_numpy(dtype=float)
+    if np.isnan(values).any() or not np.isfinite(values).all():
+        raise ValueError(f"{label} contains missing or non-finite key values")
+    if not np.isclose(values % 1, 0).all():
+        examples = series.loc[~np.isclose(values % 1, 0)].head(10).tolist()
+        raise ValueError(
+            f"{label} must contain integer-valued merge keys; "
+            f"invalid values={examples}"
+        )
+
+
+def _preflight_tariff_keys(
+    project_dir: Path,
+    specs: dict[str, Any],
+    year: int,
+    trade_path: Path,
+    tariff_module: Any,
+) -> dict[str, Any]:
+    trade_keys = pd.read_csv(
+        trade_path,
+        usecols=TARIFF_KEY,
+        low_memory=False,
+    )
+    tariff, tariff_diagnostics = tariff_module.prepare_tariff(
+        project_dir, specs, year
+    )
+    duplicate_count = validate_unique(
+        tariff, TARIFF_KEY, f"tariff preflight {year}"
+    )
+    trade_dtypes = {
+        key: str(trade_keys[key].dtype) for key in TARIFF_KEY
+    }
+    tariff_dtypes = {
+        key: str(tariff[key].dtype) for key in TARIFF_KEY
+    }
+    key_dtype_compatible = all(
+        pd.api.types.is_numeric_dtype(trade_keys[key].dtype)
+        and pd.api.types.is_numeric_dtype(tariff[key].dtype)
+        for key in TARIFF_KEY
+    )
+    if not key_dtype_compatible:
+        raise TypeError(
+            "Trade and tariff merge-key dtypes are incompatible after tariff "
+            f"normalization: trade={trade_dtypes}; tariff={tariff_dtypes}"
+        )
+    for key in TARIFF_KEY:
+        _assert_numeric_integral_key(
+            trade_keys[key], f"{trade_path.name}.{key}"
+        )
+        _assert_numeric_integral_key(
+            tariff[key], f"normalized tariff.{key}"
+        )
+    if not trade_keys["year"].eq(year).all():
+        observed_years = sorted(trade_keys["year"].unique().tolist())
+        raise ValueError(
+            f"{trade_path.name} must contain only year {year}; "
+            f"observed={observed_years}"
+        )
+    return {
+        "source": tariff_diagnostics["source"],
+        "source_format": tariff_diagnostics["source_format"],
+        "source_key_type": tariff_diagnostics["source_key_type"],
+        "normalized_key_type": "numeric",
+        "unmapped_origin_codes": tariff_diagnostics["origin_unmapped"],
+        "unmapped_destination_codes": tariff_diagnostics[
+            "destination_unmapped"
+        ],
+        "duplicate_keys": duplicate_count,
+        "key_dtype_compatible": key_dtype_compatible,
+        "trade_key_dtypes": trade_dtypes,
+        "tariff_key_dtypes": tariff_dtypes,
+        "sectors": tariff_diagnostics["sectors"],
+        "trade_rows": len(trade_keys),
+        "tariff_rows": len(tariff),
+    }
 
 
 def run(
@@ -537,6 +651,28 @@ def run(
     preflight = _preflight_paths(
         root, specs, control_spec, configured, selected_years, output_root
     )
+    tariff_module = None
+    if "trade" in configured["equations"]:
+        tariff_module = load_sibling_script(
+            "match_y_x_cons_02_prepare_tariff.py"
+        )
+        tariff_preflight_by_year = {}
+        for year in selected_years:
+            trade_path = y_x_output_paths(
+                root, specs, year, output_root
+            )["trade_csv"]
+            tariff_preflight_by_year[str(year)] = _preflight_tariff_keys(
+                root,
+                specs,
+                year,
+                trade_path,
+                tariff_module,
+            )
+        preflight["tariff_preflight"] = (
+            tariff_preflight_by_year[str(selected_years[0])]
+            if len(selected_years) == 1
+            else tariff_preflight_by_year
+        )
     if dry_run:
         plan = {
             "pipeline": "match_y_x_cons",
@@ -568,7 +704,10 @@ def run(
     pair_module = load_sibling_script(
         "match_y_x_cons_01_prepare_pair_controls.py"
     )
-    tariff_module = load_sibling_script("match_y_x_cons_02_prepare_tariff.py")
+    if tariff_module is None:
+        tariff_module = load_sibling_script(
+            "match_y_x_cons_02_prepare_tariff.py"
+        )
     gravity_module = load_sibling_script("match_y_x_cons_03_prepare_gravity.py")
     trade_module = load_sibling_script(
         "match_y_x_cons_04_merge_trade_controls.py"
@@ -601,9 +740,7 @@ def run(
             input_paths["trade_y_x"] = trade_path
             tariff, tariff_diag = tariff_module.prepare_tariff(root, specs, year)
             source_diagnostics["tariff"] = tariff_diag
-            input_paths["tariff"] = resolve_config_path(
-                root, specs["tariff_path_template"], year=year
-            )
+            input_paths["tariff"] = resolve_tariff_path(root, specs, year)
             target_codes = set(trade_y_x["iso_o_match"]) | set(
                 trade_y_x["iso_d_match"]
             )

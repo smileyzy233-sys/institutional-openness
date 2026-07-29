@@ -1,6 +1,7 @@
 {
   "schema_version": "matching_specs_v1",
   "years": [
+    2000,
     2019
   ],
   "row_policy": {
@@ -11,7 +12,11 @@
     "ROM": "ROU"
   },
   "pair_year_source": "data/processed/trade_dummy_icio_2000_2023.csv",
+  "dependent_identity_crosswalk": "Explained_variable/iso_o.dta",
   "tariff_path_template": "control__variable/tariff_{year}.csv",
+  "tariff_paths": {
+    "2000": "control__variable/tariff2000.dta"
+  },
   "gravity_path": "control__variable/Gravity_V202211.csv",
   "output_root": "result/model_inputs",
   "expected_pairs_per_year": 5776,
@@ -139,6 +144,16 @@
     }
   },
   "acceptance": {
+    "2000": {
+      "trade_source_rows": 118580,
+      "trade_rows_after_row_policy": 115520,
+      "mp_source_rows": 118580,
+      "mp_rows_after_row_policy": 115520,
+      "tariff_sectors": [
+        1,
+        19
+      ]
+    },
     "2019": {
       "trade_source_rows": 118580,
       "trade_rows_after_row_policy": 115520,
