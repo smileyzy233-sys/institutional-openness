@@ -12,6 +12,9 @@ GRAVITY_COLUMNS = [
     "iso3_d",
     "country_exists_o",
     "country_exists_d",
+    "gatt_o",
+    "gatt_d",
+    "fta_wto",
     "entry_cost_o",
     "entry_cost_d",
     "entry_proc_o",
@@ -21,7 +24,9 @@ GRAVITY_COLUMNS = [
     "entry_tp_o",
     "entry_tp_d",
     "comlang_off",
+    "comlang_ethno",
     "comrelig",
+    "scaled_sci_2021",
 ]
 
 
@@ -38,6 +43,9 @@ def test_gravity_chunk_filter_unique_and_derived_missing_preserved(tmp_path):
                     "iso3_d": destination,
                     "country_exists_o": 1,
                     "country_exists_d": 1,
+                    "gatt_o": 1,
+                    "gatt_d": np.nan if destination == "BBB" else 1,
+                    "fta_wto": 0,
                     "entry_cost_o": 1.0,
                     "entry_cost_d": np.nan if destination == "BBB" else 2.0,
                     "entry_proc_o": 3.0,
@@ -47,17 +55,26 @@ def test_gravity_chunk_filter_unique_and_derived_missing_preserved(tmp_path):
                     "entry_tp_o": 8.0,
                     "entry_tp_d": 10.0,
                     "comlang_off": 0,
+                    "comlang_ethno": 0,
                     "comrelig": np.nan if origin == "BBB" else 0.25,
+                    "scaled_sci_2021": 10.0,
                 }
             )
     pd.DataFrame(rows).to_csv(path, index=False)
-    candidates = GRAVITY_COLUMNS[5:] + ["cultural_distance_religion"]
+    candidates = GRAVITY_COLUMNS[5:] + [
+        "both_gatt",
+        "cultural_distance_religion",
+    ]
     specs = {
         "gravity_path": "control__variable/gravity.csv",
         "gravity": {
             "chunksize": 2,
             "read_columns": GRAVITY_COLUMNS,
             "candidate_controls": candidates,
+            "derived_candidates": {
+                "both_gatt": "gatt_o * gatt_d",
+                "cultural_distance_religion": "1 - comrelig",
+            },
         },
     }
     module = load_script("match_y_x_cons_03_prepare_gravity.py")
@@ -71,4 +88,19 @@ def test_gravity_chunk_filter_unique_and_derived_missing_preserved(tmp_path):
     ).all()
     assert data.loc[data["comrelig"].isna(), "cultural_distance_religion"].isna().all()
     assert data.loc[data["entry_cost_d"].isna(), "entry_cost_d"].isna().all()
+    assert data.loc[data["gatt_d"].eq(1), "both_gatt"].eq(1).all()
+    assert data.loc[data["gatt_d"].isna(), "both_gatt"].isna().all()
     assert diagnostics["rows_selected"] == 4
+
+
+def test_unsupported_derived_candidate_expression_is_rejected():
+    module = load_script("match_y_x_cons_03_prepare_gravity.py")
+    try:
+        module.materialize_derived_candidates(
+            pd.DataFrame({"gatt_o": [1], "gatt_d": [1]}),
+            {"unsafe": "gatt_o / gatt_d"},
+        )
+    except ValueError as exc:
+        assert "Unsupported derived Gravity candidate expression" in str(exc)
+    else:
+        raise AssertionError("unsupported derived expressions must be rejected")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -18,6 +19,40 @@ from match_y_x_common import (
     resolve_years,
     validate_unique,
 )
+
+
+ONE_MINUS_PATTERN = re.compile(r"^1\s*-\s*([A-Za-z_][A-Za-z0-9_]*)$")
+PRODUCT_PATTERN = re.compile(
+    r"^([A-Za-z_][A-Za-z0-9_]*)\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)$"
+)
+
+
+def materialize_derived_candidates(
+    data: pd.DataFrame,
+    derived_candidates: dict[str, str],
+) -> pd.DataFrame:
+    """Create the small, configuration-declared set of safe derived fields."""
+
+    out = data.copy()
+    for variable, expression in derived_candidates.items():
+        one_minus = ONE_MINUS_PATTERN.fullmatch(expression.strip())
+        product = PRODUCT_PATTERN.fullmatch(expression.strip())
+        if one_minus:
+            source = one_minus.group(1)
+            require_columns(out.columns, [source], expression)
+            out[variable] = 1.0 - pd.to_numeric(out[source], errors="coerce")
+        elif product:
+            left, right = product.groups()
+            require_columns(out.columns, [left, right], expression)
+            out[variable] = pd.to_numeric(
+                out[left], errors="coerce"
+            ) * pd.to_numeric(out[right], errors="coerce")
+        else:
+            raise ValueError(
+                "Unsupported derived Gravity candidate expression "
+                f"for {variable}: {expression!r}"
+            )
+    return out
 
 
 def prepare_gravity(
@@ -69,15 +104,26 @@ def prepare_gravity(
             "Filtered Gravity data does not form a complete directed square: "
             f"expected={expected_rows}, observed={observed}"
         )
-    keep = X_KEY + list(gravity_spec["candidate_controls"])
+    candidate_controls = list(gravity_spec["candidate_controls"])
+    derived_candidates = dict(gravity_spec.get("derived_candidates", {}))
+    unknown_derived = sorted(
+        set(derived_candidates).difference(candidate_controls)
+    )
+    if unknown_derived:
+        raise ValueError(
+            "Derived Gravity candidates must also be configured as candidates: "
+            f"{unknown_derived}"
+        )
+    keep = X_KEY + candidate_controls
     base_candidates = [
         column
-        for column in gravity_spec["candidate_controls"]
-        if column != "cultural_distance_religion"
+        for column in candidate_controls
+        if column not in derived_candidates
     ]
     require_columns(data.columns, base_candidates, str(path))
-    data["cultural_distance_religion"] = 1.0 - pd.to_numeric(
-        data["comrelig"], errors="coerce"
+    data = materialize_derived_candidates(
+        data,
+        derived_candidates,
     )
     data["match_gravity"] = np.int8(1)
     for family in ["entry_cost", "entry_proc", "entry_time", "entry_tp"]:
@@ -104,8 +150,9 @@ def prepare_gravity(
         "duplicate_keys": 0,
         "candidate_missing_rates": {
             column: float(data[column].isna().mean())
-            for column in gravity_spec["candidate_controls"]
+            for column in candidate_controls
         },
+        "derived_candidates": derived_candidates,
     }
     return data[keep + match_columns], diagnostics
 

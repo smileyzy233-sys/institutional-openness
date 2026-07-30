@@ -76,16 +76,28 @@ test_<模块或行为>.py
 - 不得在主匹配函数中硬编码最终控制变量组合。
 - 增加、删除或替换候选控制变量时，原则上只修改配置。
 - `trade_candidate_pool_v1` 只代表已匹配候选变量，不代表最终变量选择。
-- 以下变量在研究者明确决定前只能标记为候选：
+- 以下 Gravity 变量及其派生变量在研究者明确决定前只能标记为候选：
 
 ```text
+gatt_o / gatt_d / both_gatt
+wto_o / wto_d / both_wto
+eu_o / eu_d / both_eu
+fta_wto / fta_wto_raw
+rta_coverage / rta_type
 entry_cost_o / entry_cost_d
 entry_proc_o / entry_proc_d
 entry_time_o / entry_time_d
 entry_tp_o / entry_tp_d
-comlang_off
-comrelig
-cultural_distance_religion
+gmt_offset_2020_o / gmt_offset_2020_d
+comlang_off / comlang_ethno
+comrelig / cultural_distance_religion
+legal_old_o / legal_old_d / legal_new_o / legal_new_d
+comleg_pretrans / comleg_posttrans / transition_legalchange
+comcol / col45
+heg_o / heg_d
+col_dep_ever / col_dep / col_dep_end_year / col_dep_end_conflict
+empire / sibling_ever / sibling / sever_year / sib_conflict
+scaled_sci_2021 / diplo_disagreement
 ```
 
 - 不得把候选变量描述为已经进入最终回归。
@@ -101,10 +113,7 @@ cultural_distance_religion
 tariff
 trade_agreement_dummy
 idealpoint_abs_distance
-entry_*
-comlang_off
-comrelig
-cultural_distance_religion
+任何配置中的 Gravity 候选变量或派生候选变量
 sample_trade_main
 sample_mp_main
 ```
@@ -165,7 +174,14 @@ Gravity 大文件必须：
 - 不得对 `entry_*` 的来源国和目的国字段求平均。
 - 不得插补缺失值。
 
-`cultural_distance_religion = 1 - comrelig` 只能标记为派生候选变量。
+以下派生字段只能标记为候选变量：
+
+```text
+both_gatt = gatt_o * gatt_d
+both_wto = wto_o * wto_d
+both_eu = eu_o * eu_d
+cultural_distance_religion = 1 - comrelig
+```
 
 ## 9. 重命名和变更同步
 
@@ -216,7 +232,7 @@ docs/贸易与跨国生产命名契约.md
 ## 12. 当前回归变量的真实来源与匹配方法
 
 本节是供后续新窗口 agent 使用的项目级“当前事实清单”，最后核验日期为
-`2026-07-29`。本节记录的是当前代码、配置和已生成诊断共同反映的真实流程，
+`2026-07-30`。本节记录的是当前代码、配置和已生成诊断共同反映的真实流程，
 不是早期设想或聊天记录。
 
 必须区分两种“来源”：
@@ -424,19 +440,51 @@ country_exists_d == 1
 当前匹配但尚未最终选择的候选变量为：
 
 ```text
+贸易便利化——成员资格与协定：
+gatt_o / gatt_d / both_gatt
+wto_o / wto_d / both_wto
+eu_o / eu_d / both_eu
+fta_wto / fta_wto_raw
+rta_coverage / rta_type
+
+贸易便利化——企业开办环境：
 entry_cost_o / entry_cost_d
 entry_proc_o / entry_proc_d
 entry_time_o / entry_time_d
 entry_tp_o / entry_tp_d
-comlang_off
-comrelig
+
+文化、社会、法律和历史接近：
+gmt_offset_2020_o / gmt_offset_2020_d
+comlang_off / comlang_ethno
+comrelig / cultural_distance_religion
+legal_old_o / legal_old_d / legal_new_o / legal_new_d
+comleg_pretrans / comleg_posttrans / transition_legalchange
+comcol / col45
+heg_o / heg_d
+col_dep_ever / col_dep / col_dep_end_year / col_dep_end_conflict
+empire / sibling_ever / sibling / sever_year / sib_conflict
+scaled_sci_2021 / diplo_disagreement
+```
+
+合计 49 个候选字段，其中 45 个为 Gravity 直接字段，4 个为派生字段。
+
+派生候选变量为：
+
+```text
+both_gatt = gatt_o * gatt_d
+both_wto = wto_o * wto_d
+both_eu = eu_o * eu_d
 cultural_distance_religion = 1 - comrelig
 ```
 
 这些字段虽然出现在 `trade_y_x_cons_{year}` 中，但不等于已经进入最终回归。
 特别是，当前尚未选定一个最终的“贸易便利化”主控制变量。
 
-不得对来源国和目的国的 `entry_*` 求平均，不得插补缺失值。
+CEPII 的 `entry_*` 衡量企业注册/开办环境，不是海关通关时间、物流绩效或
+进出口单证成本。不得对来源国和目的国的 `entry_*` 求平均，不得插补缺失值。
+`rta_coverage`、`rta_type`、`legal_old_o/d`、`legal_new_o/d` 和 `empire`
+在 CSV 中保留 CEPII 的数值分类编码；解释类别时使用随数据提供的标签文件
+（若该字段有标签文件）。
 
 ### 12.6 MP 方程控制变量
 
@@ -457,10 +505,7 @@ MP 方程不自动加入：
 
 ```text
 tariff
-任何 entry_*
-comlang_off
-comrelig
-cultural_distance_religion
+任何 Gravity 贸易便利化、文化、社会、法律、殖民或派生候选变量
 ```
 
 ### 12.7 ISO、方向、合并和输出
@@ -530,6 +575,49 @@ result/model_inputs/match_y_x_cons/mp_controls_v1/{year}/
 
 2000 和 2019 comlang_off：
   当前目标样本无缺失。
+
+2000 和 2019 的下列候选字段：
+  gatt_o/d、wto_o/d、eu_o/d、both_gatt、both_wto、both_eu、
+  fta_wto、fta_wto_raw、gmt_offset_2020_o/d、comlang_ethno、
+  legal_new_o/d、comleg_posttrans、transition_legalchange、comcol、col45：
+  当前目标样本无缺失。
+
+2000 和 2019 legal_old_o / legal_old_d：
+  CZE 作为相应来源国或目的国时缺失；
+  每列 1,520 个贸易部门行缺失，约 1.32%。
+
+2000 和 2019 comleg_pretrans：
+  1 个国家对缺失；
+  20 个贸易部门行缺失，约 0.017%。
+
+2000 和 2019 heg_o/d、col_dep_ever、col_dep、sibling_ever、sibling：
+  每列 4 个国家对缺失；
+  80 个贸易部门行缺失，约 0.069%。
+
+2000 rta_coverage / rta_type：
+  每列 4,522 个国家对、90,440 个贸易部门行缺失，约 78.29%。
+2019 rta_coverage / rta_type：
+  每列 3,144 个国家对、62,880 个贸易部门行缺失，约 54.43%。
+  这些字段在本地 CEPII CSV 中主要随 WTO 原始 RTA 记录出现；无原始 RTA
+  的国际国家对通常为空。匹配层保留源值，不得自动把空值改成 0。
+
+2000 和 2019 的条件型殖民/共同宗主国字段：
+  col_dep_end_year 缺失 113,600 行，约 98.34%；
+  col_dep_end_conflict 缺失 114,160 行，约 98.82%；
+  sever_year 和 sib_conflict 各缺失 107,920 行，约 93.42%。
+  这些字段只对存在相应历史关系的国家对有定义，高缺失率不能视为主键匹配失败。
+
+2000 和 2019 empire：
+  当前 76×76 目标样本全部缺失；字段仍按用户要求保留为候选，但按现状不能
+  直接作为有变异的控制变量使用。
+
+scaled_sci_2021：
+  2000 缺失 592 个国家对、11,840 行，约 10.25%；
+  2019 缺失 447 个国家对、8,940 行，约 7.74%。
+
+diplo_disagreement：
+  2000 缺失 520 个国家对、10,400 行，约 9.00%；
+  2019 缺失 374 个国家对、7,480 行，约 6.48%。
 
 2000 和 2019 tariff：
   部门 20 的 5,776 行结构性缺失，缺失率 5%。

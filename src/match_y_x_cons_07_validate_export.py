@@ -38,6 +38,43 @@ from match_y_x_cons_common import (
 
 
 TARIFF_KEY = ["year", "iso_o1", "iso_d1", "sector_amne"]
+BINARY_GRAVITY_FIELDS = {
+    "gatt_o",
+    "gatt_d",
+    "both_gatt",
+    "wto_o",
+    "wto_d",
+    "both_wto",
+    "eu_o",
+    "eu_d",
+    "both_eu",
+    "fta_wto",
+    "fta_wto_raw",
+    "comlang_off",
+    "comlang_ethno",
+    "comleg_pretrans",
+    "comleg_posttrans",
+    "transition_legalchange",
+    "comcol",
+    "col45",
+    "heg_o",
+    "heg_d",
+    "col_dep_ever",
+    "col_dep",
+    "col_dep_end_conflict",
+    "sibling_ever",
+    "sibling",
+    "sib_conflict",
+}
+CATEGORICAL_GRAVITY_FIELDS = {
+    "rta_coverage",
+    "rta_type",
+    "legal_old_o",
+    "legal_old_d",
+    "legal_new_o",
+    "legal_new_d",
+    "empire",
+}
 
 
 def _equation_targets(paths: dict[str, Path], equations: list[str]) -> list[Path]:
@@ -150,6 +187,10 @@ def _dictionary_rows(
 ) -> list[dict[str, Any]]:
     selected = set(equation_spec["selected_controls"])
     candidates = set(equation_spec["candidate_controls"])
+    gravity_candidates = set(specs["gravity"]["candidate_controls"])
+    derived_candidates = dict(
+        specs["gravity"].get("derived_candidates", {})
+    )
     dependent_path = specs["equations"][equation][
         "dependent_path_template"
     ].format(year=year)
@@ -181,7 +222,7 @@ def _dictionary_rows(
             role = "control_candidate"
             selected_status = (
                 "derived_candidate"
-                if variable == "cultural_distance_religion"
+                if variable in derived_candidates
                 else "candidate_control"
             )
             note = "Matched candidate only; not selected for the final regression."
@@ -194,20 +235,50 @@ def _dictionary_rows(
         elif variable in {"trade_agreement_dummy", "idealpoint_abs_distance"}:
             source_file = pair_path
             matching_keys = "year + iso_o_match + iso_d_match"
-        elif (
-            variable.startswith("entry_")
-            or variable in {
-                "comlang_off",
-                "comrelig",
-                "cultural_distance_religion",
-            }
-        ):
+        elif variable in gravity_candidates:
             source_file = gravity_path
             matching_keys = "year + iso_o_match + iso_d_match"
+        if variable in derived_candidates:
+            expression = derived_candidates[variable]
+            source_column = (
+                expression.split("-", maxsplit=1)[1].strip()
+                if expression.strip().startswith("1") and "-" in expression
+                else ", ".join(
+                    part.strip() for part in expression.split("*")
+                )
+            )
+            transformation = expression
         if variable == "cultural_distance_religion":
-            source_column = "comrelig"
-            transformation = "1 - comrelig"
             unit_or_scale = "0-1 distance"
+            note += " Higher values indicate less religious proximity."
+        elif variable == "comrelig":
+            unit_or_scale = "0-1 proximity"
+            note += " Higher values indicate greater religious proximity."
+        elif variable in BINARY_GRAVITY_FIELDS:
+            unit_or_scale = "0/1"
+        elif variable == "entry_cost_o" or variable == "entry_cost_d":
+            unit_or_scale = "% of GNI per capita"
+            note += " Business start-up cost; not a customs/border measure."
+        elif variable.startswith("entry_proc_"):
+            unit_or_scale = "number of start-up procedures"
+            note += " Business registration environment; not customs clearance."
+        elif variable.startswith("entry_time_"):
+            unit_or_scale = "days to start a business"
+            note += " Business registration environment; not customs clearance."
+        elif variable.startswith("entry_tp_"):
+            unit_or_scale = "start-up days + procedures"
+            note += " Composite business start-up measure; not customs clearance."
+        elif variable.startswith("gmt_offset_2020_"):
+            unit_or_scale = "hours from GMT (2020)"
+        elif variable in {"col_dep_end_year", "sever_year"}:
+            unit_or_scale = "calendar year"
+        elif variable in CATEGORICAL_GRAVITY_FIELDS:
+            unit_or_scale = "CEPII numeric category code"
+            note += " Retains the CEPII CSV category code."
+        elif variable == "scaled_sci_2021":
+            note += " Higher values indicate stronger social connectedness."
+        elif variable == "diplo_disagreement":
+            note += " Higher values indicate greater UN-vote disagreement."
         if variable == "trade_agreement_dummy":
             unit_or_scale = "0/1"
         if variable.startswith(("match_", "sample_", "available_", "is_", "uses_")):
@@ -322,6 +393,9 @@ def _write_readme(
     lines.extend(
         [
             "The `trade_candidate_pool_v1` candidate variables are available for later research decisions only.",
+            "The CEPII `entry_*` fields measure business start-up procedures, cost, and time; they are not customs-clearance or border-efficiency measures.",
+            "Categorical Gravity fields retain the numeric codes in the CEPII CSV; use the supplied CEPII label files where available.",
+            "Source documentation: https://www.cepii.fr/DATA_DOWNLOAD/gravity/doc/Gravity_documentation.pdf",
             "No `sample_trade_main` or `sample_mp_main` flag is produced.",
             "",
         ]
@@ -367,7 +441,10 @@ def _write_year(
             "raw_trade_score" if equation == "trade" else "raw_mp_score"
         )
         core = Y_KEY + ["value", x_column]
-        controls = control_spec[equation]["selected_controls"]
+        controls = (
+            control_spec[equation]["selected_controls"]
+            + control_spec[equation]["candidate_controls"]
+        )
         csv_dta[equation] = validate_csv_dta_pair(
             paths[f"{equation}_csv"],
             paths[f"{equation}_dta"],

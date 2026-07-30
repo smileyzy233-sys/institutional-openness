@@ -17,16 +17,64 @@ import pandas as pd
 MATCHING_CONFIG_PATH = Path("configs") / "matching_specs.json"
 Y_KEY = ["year", "iso_o", "iso_d", "sector_amne"]
 X_KEY = ["year", "iso_o_match", "iso_d_match"]
+GRAVITY_TRADE_CONTROL_COLUMNS = {
+    "gatt_o",
+    "gatt_d",
+    "both_gatt",
+    "wto_o",
+    "wto_d",
+    "both_wto",
+    "eu_o",
+    "eu_d",
+    "both_eu",
+    "fta_wto",
+    "fta_wto_raw",
+    "rta_coverage",
+    "rta_type",
+    "entry_cost_o",
+    "entry_cost_d",
+    "entry_proc_o",
+    "entry_proc_d",
+    "entry_time_o",
+    "entry_time_d",
+    "entry_tp_o",
+    "entry_tp_d",
+    "gmt_offset_2020_o",
+    "gmt_offset_2020_d",
+    "comlang_off",
+    "comlang_ethno",
+    "comrelig",
+    "cultural_distance_religion",
+    "legal_old_o",
+    "legal_old_d",
+    "legal_new_o",
+    "legal_new_d",
+    "comleg_pretrans",
+    "comleg_posttrans",
+    "transition_legalchange",
+    "comcol",
+    "col45",
+    "heg_o",
+    "heg_d",
+    "col_dep_ever",
+    "col_dep",
+    "col_dep_end_year",
+    "col_dep_end_conflict",
+    "empire",
+    "sibling_ever",
+    "sibling",
+    "sever_year",
+    "sib_conflict",
+    "scaled_sci_2021",
+    "diplo_disagreement",
+}
 FORBIDDEN_Y_X_COLUMNS = {
     "tariff",
     "trade_agreement_dummy",
     "idealpoint_abs_distance",
-    "comlang_off",
-    "comrelig",
-    "cultural_distance_religion",
     "sample_trade_main",
     "sample_mp_main",
-}
+} | GRAVITY_TRADE_CONTROL_COLUMNS
 
 
 def project_directory() -> Path:
@@ -295,6 +343,8 @@ def _stata_ready(data: pd.DataFrame) -> pd.DataFrame:
             out[column] = series.astype(np.int8)
         elif isinstance(series.dtype, pd.StringDtype):
             out[column] = series.astype(object)
+        elif pd.api.types.is_object_dtype(series.dtype) and series.isna().all():
+            out[column] = np.nan
         elif str(series.dtype).startswith(("Int", "UInt")):
             out[column] = (
                 series.astype(float)

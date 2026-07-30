@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from match_y_x_common import (
+    GRAVITY_TRADE_CONTROL_COLUMNS,
     X_KEY,
     Y_KEY,
     require_columns,
@@ -18,20 +19,7 @@ from match_y_x_common import (
 )
 
 
-TRADE_EXCLUSIVE_CONTROLS = {
-    "tariff",
-    "entry_cost_o",
-    "entry_cost_d",
-    "entry_proc_o",
-    "entry_proc_d",
-    "entry_time_o",
-    "entry_time_d",
-    "entry_tp_o",
-    "entry_tp_d",
-    "comlang_off",
-    "comrelig",
-    "cultural_distance_religion",
-}
+TRADE_EXCLUSIVE_CONTROLS = {"tariff"} | GRAVITY_TRADE_CONTROL_COLUMNS
 FINAL_SAMPLE_FLAGS = {"sample_trade_main", "sample_mp_main"}
 
 
