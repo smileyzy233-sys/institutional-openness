@@ -162,6 +162,7 @@ def write_stage1_success_manifest(stage1_final):
         {
             "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
             "run_id": "test",
+            "provisions_master_sha256": sha256_file(config.PROVISIONS_MASTER_PATH),
             "stage1a_final_sha256": stage1a_hash,
         },
         config.STAGE1A_MANIFEST_PATH,
@@ -189,6 +190,7 @@ def write_stage1_success_manifest(stage1_final):
         {
             "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
             "run_id": "test",
+            "provisions_master_sha256": sha256_file(config.PROVISIONS_MASTER_PATH),
             "stage1a_final_sha256": stage1a_hash,
             "stage1b_final_sha256": stage1b_hash,
         },

@@ -1,0 +1,35 @@
+{
+  "as_of": "2026-09-15",
+  "python": "3.13.5",
+  "packages": {
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
+    "openpyxl": "3.1.5",
+    "openai": "2.29.0",
+    "python-dotenv": "1.1.0",
+    "pytest": "8.3.4"
+  },
+  "validation": {
+    "local_full_suite": "155 passed, 3 skipped",
+    "clean_staged_code_snapshot_without_data": "155 passed, 3 skipped",
+    "post_repair_targeted_suite": "34 passed",
+    "compileall_src_tests_scripts": "passed",
+    "read_only_audit_cli": "passed; JSON equals audit_20260915.json",
+    "staged_secret_scan": "no token/private-key pattern hits",
+    "protected_data_formats_in_git": "none",
+    "office_archives": "ZIP integrity checked",
+    "skipped_tests": "3 legacy integration tests require absent historical artifacts"
+  },
+  "publication_fixes": [
+    "Archived legacy path is reported using logical_relative; synthetic external-archive test added.",
+    "Safety dry-run tests assert missing-input reporting in a clean code-only checkout."
+  ],
+  "not_executed": [
+    "LLM inference",
+    "real measurement or matching pipeline",
+    "Stata build scripts",
+    "OLS",
+    "PPML"
+  ],
+  "known_state": "Existing fractional matching products keep domestic pairs; current default removes them, not rebuilt."
+}

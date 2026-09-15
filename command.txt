@@ -1,11 +1,15 @@
-# 2000 年匹配：每步先预检，再正式生成
-python run_pipeline.py match-y-x --years 2000 --dry-run
-python run_pipeline.py match-y-x --years 2000
+# 先阅读 review/README.md。以下命令从 dta_institutional_opening 根目录执行。
+# 仅安装依赖、运行合成测试与只读核验，不生成实证数据。
+python -m pip install -r requirements-dev.txt
+python -B -m pytest -q
 
-python run_pipeline.py match-y-x-cons --years 2000 --control-spec trade_candidate_pool_v1 --dry-run
-python run_pipeline.py match-y-x-cons --years 2000 --control-spec trade_candidate_pool_v1
+# 取得配套数据包并解压到并列的 DTA / Stata 目录后：
+python -B scripts/verify_review_bundle.py --data-root . --stata-root ../stata_institutional_opening
 
-python run_pipeline.py match-y-x-cons --years 2000 --control-spec mp_controls_v1 --dry-run
-python run_pipeline.py match-y-x-cons --years 2000 --control-spec mp_controls_v1
+# 现存 outputs/matched_data 使用 keep_domestic=true；新默认值为 false。
+# 只读预检可显示这一冲突；不得修改旧 manifest 或用 --force 绕过。
+python -B run_pipeline.py match-y-x --years 2000 2019 --dry-run
 
-# 重跑已有结果时，在对应正式命令末尾加 --force
+# 后续确需按新默认规则重建时，按 docs/sample_policy_change_20260915.md
+# 顺序使用独立输出目录，先 Y-X 再控制变量。该文档包含会生成文件的命令。
+# 不要把 measure-x / all 当作复核入口：实际执行可能调用 LLM。

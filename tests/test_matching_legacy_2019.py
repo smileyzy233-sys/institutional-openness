@@ -6,12 +6,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from archive_paths import historical_path
+from match_y_x_common import load_matching_specs, resolve_output_root
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LEGACY_ROOT = (
-    PROJECT_ROOT
-    / "result"
-    / "model_inputs"
+    resolve_output_root(PROJECT_ROOT, load_matching_specs(PROJECT_ROOT), None)
     / "match_y_x_cons"
     / "legacy_2019_v1"
     / "2019"
@@ -19,15 +20,13 @@ LEGACY_ROOT = (
 LEGACY_ARTIFACTS_AVAILABLE = all(
     path.exists()
     for path in [
-        PROJECT_ROOT
-        / "result"
-        / "refactor_baseline"
+        historical_path(PROJECT_ROOT, "result/refactor_baseline")
         / "baseline_manifest_2019.json",
         LEGACY_ROOT / "build_manifest.json",
         LEGACY_ROOT / "trade_y_x_cons_2019.csv",
         LEGACY_ROOT / "mp_y_x_cons_2019.csv",
-        PROJECT_ROOT / "result" / "regression_2019" / "trade_cost_2019_matched.csv",
-        PROJECT_ROOT / "result" / "regression_2019" / "mp_cost_2019_matched.csv",
+        historical_path(PROJECT_ROOT, "result/regression_2019") / "trade_cost_2019_matched.csv",
+        historical_path(PROJECT_ROOT, "result/regression_2019") / "mp_cost_2019_matched.csv",
     ]
 )
 pytestmark = pytest.mark.skipif(
@@ -50,7 +49,7 @@ def test_legacy_manifest_reports_zero_overlap_mismatches():
 
 
 def test_legacy_raw_scores_are_rowwise_equal_to_delivered_results():
-    old_root = PROJECT_ROOT / "result" / "regression_2019"
+    old_root = historical_path(PROJECT_ROOT, "result/regression_2019")
     new_root = LEGACY_ROOT
     for equation, old_name, score in [
         ("trade", "trade_cost_2019_matched.csv", "raw_trade_score"),
@@ -68,9 +67,7 @@ def test_legacy_raw_scores_are_rowwise_equal_to_delivered_results():
 
 def test_baseline_manifest_exists_and_does_not_copy_inputs():
     path = (
-        PROJECT_ROOT
-        / "result"
-        / "refactor_baseline"
+        historical_path(PROJECT_ROOT, "result/refactor_baseline")
         / "baseline_manifest_2019.json"
     )
     manifest = json.loads(path.read_text(encoding="utf-8"))

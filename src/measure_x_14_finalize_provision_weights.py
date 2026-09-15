@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     assert_impact_label_schema,
     as_bool,
@@ -187,6 +188,7 @@ def assert_final_consistent(final_df: pd.DataFrame, provisions: pd.DataFrame) ->
         ).eq(mp_weight).all()
 
 
+@protected_step(__file__)
 def run(*, allow_unresolved: bool = config.ALLOW_UNRESOLVED) -> None:
     ensure_directories()
     check_stage1_gate()
@@ -390,4 +392,4 @@ def run(*, allow_unresolved: bool = config.ALLOW_UNRESOLVED) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

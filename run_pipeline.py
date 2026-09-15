@@ -13,6 +13,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 import config  # noqa: E402
+from pipeline_safety import output_permission, preflight  # noqa: E402
 from utils import check_stage1_gate, check_stage1a_gate, check_stage1b_gate  # noqa: E402
 
 
@@ -103,7 +104,7 @@ def run_stage1a_model(args: argparse.Namespace, role: str) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
     )
 
@@ -115,7 +116,7 @@ def run_stage1b_model(args: argparse.Namespace, role: str) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
     )
 
@@ -127,7 +128,7 @@ def run_stage2_model(args: argparse.Namespace, role: str) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
     )
 
@@ -138,7 +139,7 @@ def run_stage1a_arbitration(args: argparse.Namespace) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
     )
 
 
@@ -148,7 +149,7 @@ def run_stage1b_arbitration(args: argparse.Namespace) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
     )
 
 
@@ -158,7 +159,7 @@ def run_stage2_arbitration(args: argparse.Namespace) -> None:
         provider=provider,
         model_name=model,
         base_url=base_url,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
     )
 
@@ -174,26 +175,68 @@ def validate_limit_usage(command: str, args: argparse.Namespace) -> None:
         )
 
 
+def command_steps(command: str, args: argparse.Namespace) -> list[tuple[str, dict]]:
+    """Describe measurement commands without importing or executing step scripts."""
+    role = getattr(args, "model_role", None)
+    if command in {"measure-x", "all"}:
+        names = list(MEASURE_X_SCRIPT_ORDER)
+        if command == "all":
+            names.insert(-1, "14_build_trade_agreement_dummy.py")
+        # These commands always run both model roles, even if --model-role is set.
+        return [(name, {}) for name in names]
+    if command == "stage1":
+        return [(name, {}) for name in MEASURE_X_SCRIPT_ORDER[1:10]]
+    if command in {"stage1a", "stage1b", "stage2"}:
+        start = {"stage1a": 1, "stage1b": 5, "stage2": 10}[command]
+        names = MEASURE_X_SCRIPT_ORDER[start:start + (1 if role else 2)]
+        return [(name, {"model_role": role}) for name in names]
+    indexes = {
+        "load": 0, "stage1a-arbitrate": 3, "stage1a-finalize": 4,
+        "stage1b-arbitrate": 7, "stage1b-finalize": 8,
+        "stage1-finalize": 9, "stage2-arbitrate": 12,
+        "finalize": 13, "diagnostics": 16,
+    }
+    if command in indexes:
+        return [(MEASURE_X_SCRIPT_ORDER[indexes[command]], {})]
+    if command == "indices":
+        return [(name, {}) for name in MEASURE_X_SCRIPT_ORDER[14:16]]
+    if command == "dummy":
+        return [("14_build_trade_agreement_dummy.py", {})]
+    if command == "finalize-single-stage2":
+        return [("10_finalize_weights_single_stage2_model.py", {"model_role": role or "B"})]
+    raise ValueError(f"Unknown measurement command: {command}")
+
+
 def run_command(command: str, args: argparse.Namespace) -> None:
     validate_limit_usage(command, args)
+    if command in {"match-y-x", "match-y-x-cons"}:
+        # These entry points already provide read-only preflight and collision checks.
+        _execute_command(command, args)
+        return
+    plan = preflight(command_steps(command, args))
+    if args.dry_run:
+        print(json.dumps({
+            "pipeline": command.replace("-", "_"),
+            "dry_run": True,
+            "note": "只检查路径与已有输出；没有调用模型、计算或写入文件。",
+            **plan,
+        }, ensure_ascii=False, indent=2))
+        if plan["missing_inputs"]:
+            raise FileNotFoundError("缺少输入：" + ", ".join(plan["missing_inputs"]))
+        return
+    # Check every target before the first stage, so a late collision cannot leave
+    # earlier stages partially overwritten. --force does not disable model resume.
+    with output_permission(plan["outputs"], force=args.force):
+        if plan["missing_inputs"]:
+            raise FileNotFoundError("缺少输入：" + ", ".join(plan["missing_inputs"]))
+        _execute_command(command, args)
+
+
+def _execute_command(command: str, args: argparse.Namespace) -> None:
     if command == "measure-x":
-        if args.dry_run:
-            print(
-                json.dumps(
-                    {
-                        "pipeline": "measure_x",
-                        "dry_run": True,
-                        "steps": MEASURE_X_SCRIPT_ORDER,
-                        "note": "No model or arbitration call was made.",
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            )
-        else:
-            for label, step in measure_x_steps(args):
-                print(f"\n=== Running: {label} ===")
-                step()
+        for label, step in measure_x_steps(args):
+            print(f"\n=== Running: {label} ===")
+            step()
     elif command == "match-y-x":
         load_script("match_y_x_06_validate_export.py").run(
             years=args.years,
@@ -413,11 +456,11 @@ def run_all(args: argparse.Namespace) -> None:
                 print(message)
                 print("\nAfter completing the manual review queue, run:")
                 if "Stage 1A requires" in message:
-                    print("python run_pipeline.py stage1a-finalize")
+                    print("python run_pipeline.py stage1a-finalize --force")
                 else:
-                    print("python run_pipeline.py stage1b-finalize")
-                print("python run_pipeline.py all --resume")
-                return
+                    print("python run_pipeline.py stage1b-finalize --force")
+                print("python run_pipeline.py all --resume --force")
+                raise
             raise
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     check_stage1a_gate,
     ensure_directories,
@@ -97,6 +98,7 @@ def prefix_model(frame: pd.DataFrame, prefix: str) -> pd.DataFrame:
     )
 
 
+@protected_step(__file__)
 def run() -> None:
     ensure_directories()
     eligible = eligible_provisions()
@@ -186,4 +188,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

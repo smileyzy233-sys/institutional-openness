@@ -11,6 +11,7 @@ import pandas as pd
 
 from match_y_x_common import (
     Y_KEY,
+    apply_row_policy,
     load_matching_specs,
     normalize_iso_series,
     project_directory,
@@ -18,6 +19,7 @@ from match_y_x_common import (
     resolve_config_path,
     resolve_years,
     validate_unique,
+    validate_row_policy_acceptance,
 )
 
 
@@ -147,14 +149,8 @@ def prepare_y(
     aliases = specs["iso_aliases"]
     out["iso_o_match"] = normalize_iso_series(out["iso_o"], aliases)
     out["iso_d_match"] = normalize_iso_series(out["iso_d"], aliases)
-    out["is_domestic_pair"] = out["iso_o"].eq(out["iso_d"]).astype(np.int8)
-    out["is_row_pair"] = (
-        out["iso_o"].eq("ROW") | out["iso_d"].eq("ROW")
-    ).astype(np.int8)
-    if specs["row_policy"].get("drop_row", True):
-        out = out.loc[out["is_row_pair"].eq(0)].copy()
-    if not specs["row_policy"].get("keep_domestic", True):
-        out = out.loc[out["is_domestic_pair"].eq(0)].copy()
+    out, row_policy_audit = apply_row_policy(out, specs)
+    validate_row_policy_acceptance(row_policy_audit, specs, equation, year)
     out["positive_value"] = out[value_column].gt(0).astype(np.int8)
     ordered = [
         "year",
@@ -173,6 +169,7 @@ def prepare_y(
         "is_row_pair",
     ]
     out = out[ordered].reset_index(drop=True)
+    out.attrs["row_policy_audit"] = row_policy_audit
     validate_unique(out, Y_KEY, f"prepared {equation.upper()} {year}")
     return out
 

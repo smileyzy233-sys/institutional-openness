@@ -67,8 +67,12 @@ test_<模块或行为>.py
 - 数据路径必须相对项目根目录配置，不得写入个人绝对路径。
 - `--dry-run` 不得写文件。
 - 未指定 `--force` 时不得覆盖已有输出。
-- `result/regression_2019` 是只读 legacy 基准，不得覆盖。
-- 所有重构结果写入新的 `result/model_inputs` 或明确指定的新目录。
+- 根入口和直接执行的测算步骤必须使用统一预检；多步骤命令在第一步前检查全部输出，不能执行到一半才发现覆盖冲突。
+- `--dry-run` 必须在任何目录创建、模型调用、计算和写入之前返回；缺少输入应明确报错。入口模块被导入时不得自动启动流程。
+- `--force` 只授权覆盖，不改变缓存复用选择。`--no-resume` 不构成覆盖授权，也不得提前删除旧模型结果后再开始调用模型。
+- 指标计算前须核对条款主表、分类与权重的对应关系；协定指标必须记录并校验输入版本。历史兼容只允许精确文件组合，独立基线须注明未重算，不得修改历史 CSV/manifest 或以宽泛的忽略哈希选项绕过校验。
+- `result/regression_2019` 是已归档的只读 legacy 基准（历史逻辑路径），通过 `configs/historical_path_mappings.json` 定位，不得覆盖。
+- 当前匹配产品统一写入 `outputs/matched_data`，或明确指定的新版本目录；默认位置由匹配配置管理。
 
 ## 5. 控制变量配置
 
@@ -118,7 +122,9 @@ sample_trade_main
 sample_mp_main
 ```
 
-`match_y_x_cons` 必须以 Y-X 输出为唯一基表，使用 left join，并验证每次合并前后行数完全一致。
+`match_y_x_cons` 必须以按配置筛选后的 Y-X 输出为唯一基表，使用 left join，并验证每次合并前后行数完全一致。
+读取既有 Y-X 前必须核对其 manifest 样本配置及 CSV 哈希；配置冲突或缺少证据时提示重新构建，
+不得仅因文件存在而复用，不得在控制变量步骤补删基表行，也不得用 `--force` 绕过检查。
 
 MP 方程只自动匹配：
 
@@ -153,9 +159,13 @@ year + iso_o1 + iso_d1 + sector_amne
 
 - 原始 `iso_o`、`iso_d` 保持不变。
 - `ROM -> ROU` 只能作用于 `iso_o_match`、`iso_d_match`。
-- 按配置删除涉及 `ROW` 的观测。
-- 国内流量必须保留，除非配置明确改变。
+- 默认 `row_policy.drop_row: true`、`row_policy.keep_domestic: false`，在 Y 准备步骤删除涉及 `ROW` 的观测与本国国家对；配置缺省时采用相同默认值。
+- 仅当既有 `keep_domestic` 开关显式设为 `true` 时，在 DTA 匹配中保留本国对；ROW 仍由 `drop_row` 独立控制，不新增重复开关。
+- 判断 ROW/本国对只规范化大小写与首尾空白，不修改原始 ISO、不套用 ISO 别名；两端均非空且非缺失、规范化后相同才是本国对。
+- 筛选审计记录配置、前后行数、两类数量、交集与实际并集删除数。Stata 构建使用自身原始快照，检查并兜底删除 ROW/本国对，零命中也须记录通过。
+- 更改默认规则不等于重建输出；原始输入快照和历史日志、manifest 保持不变，另立变更记录说明旧输出状态。
 - 国内 `raw_trade_score`、`raw_mp_score` 和 `trade_agreement_dummy` 为结构性 0。
+- 指标计算阶段，DTA 条款覆盖字段的空白值按研究者于 `2026-09-15` 确认的师生商定口径计为 0；编码工作簿可以保留原始空白。`NR` 等特殊状态码继续按既有编码规则处理。本口径只适用于条款覆盖进入指标计算，不适用于匹配阶段的控制变量。
 - 关税、政治距离、Gravity 字段和候选控制变量的缺失值不得填 0。
 - ICIO 部门 20 的关税必须保持缺失。
 - 不得因 X 或控制变量缺失自动删除 Y 行。
@@ -204,7 +214,7 @@ cultural_distance_religion = 1 - comrelig
 - Y-X 和控制变量合并不改变左表行数。
 - raw scores 不被重新计算或修改。
 - 国内 raw scores 和协议虚拟变量仍为 0。
-- ROW 删除和国内流量保留符合配置。
+- ROW 与本国对处理符合配置，缺失 ISO 不误删，重复筛选不改变行数。
 - Y-X 输出不含控制变量。
 - MP 输出不含贸易方程专属控制变量。
 - 缺失值没有被错误填 0。
@@ -231,9 +241,20 @@ docs/贸易与跨国生产命名契约.md
 
 ## 12. 当前回归变量的真实来源与匹配方法
 
+**代码与已有文件须分开解读：** 当前代码默认排除 ROW 和本国对；本节现存文件的
+数量、比例和缺失统计仍描述旧 `keep_domestic: true` 输出，不代表新默认样本已生成。
+对应的重建状态、验证证据和操作步骤维护在 `docs/sample_policy_change_20260915.md`。
+
 本节是供后续新窗口 agent 使用的项目级“当前事实清单”，最后核验日期为
-`2026-07-30`。本节记录的是当前代码、配置和已生成诊断共同反映的真实流程，
-不是早期设想或聊天记录。
+`2026-09-15`。本次修订范围是：条款覆盖空白与 `NR` 的计算口径、2000 年
+ICIO/AMNE 身份字段的实际状态、fractional 流程的 X 来源、匹配层与 Stata
+实证样本的边界、Trade/MP 部门范围，以及 2019 Trade CSV→DTA 保存精度差异。
+未涉及修订的数量、比例和缺失统计保留原核验口径（原记录日期为
+`2026-07-30`）；`2026-09-14` 只读审计与本次确认事项见
+`docs/measurement_decisions_20260915.md` 和
+`manifests/measurement_compatibility_20260915.json`。本次同步不重新运行
+回归，也不以旧数值作新的估计结论。本文记录的是当前代码、配置和已生成诊断
+共同反映的真实流程，不是早期设想或聊天记录。
 
 必须区分两种“来源”：
 
@@ -289,12 +310,14 @@ year + iso_o + iso_d + sector_amne
 ```
 
 `iso_o`、`iso_d`、`sector_amne` 和 `value` 来自相应的 ICIO/AMNE 文件。
-当前 2000、2019 文件都已经包含 `country_o`、`country_d`、`iso_o1`、
-`iso_d1`。如果未来年度缺少这些身份字段，代码才使用
-`Explained_variable/iso_o.dta` 作为后备映射表补充；该后备映射不改变
-`value`。
+当前实际文件状态是：2000 年 `icio2000.dta`、`amne2000.dta` 仅含
+`iso_o`、`iso_d`、`sector_amne`、`value`；2019 年 `icio2019.dta`、
+`amne2019.dta` 自带 `country_o`、`country_d`、`iso_o1`、`iso_d1`。因此，
+2000 年按配置使用 `Explained_variable/iso_o.dta` 后备映射补充身份字段，
+2019 年直接读取源文件中的身份字段；该后备映射不改变 `value`。
 
-ROW 按配置删除，国内流量保留。不得因为 X 或控制变量缺失删除 Y 行。
+当前代码默认删除 ROW 与本国对，显式 `keep_domestic: true` 可保留本国对。
+既有文件尚未按新默认规则重建。不得因为 X 或控制变量缺失删除 Y 行。
 
 ### 12.3 核心解释变量 X
 
@@ -318,19 +341,25 @@ MP 方程核心解释变量：
 year + iso_o_match + iso_d_match
 ```
 
-上游生成链路为：
+当前 fractional 口径的 X 上游链路为：
 
 ```text
-DTA 条款识别和权重
+DTA 条款编码与指标计算（覆盖空白在计算时记 0，`NR` 沿既有规则；沿用既有
+LLM 分类和 Trade/MP 有效权重）
 -> data/processed/agreement_level_indices.csv
 -> src/measure_x_16_compute_country_pair_year_scores.py
 -> data/processed/country_pair_year_indices.csv
 -> src/14_build_trade_agreement_dummy.py
 -> data/processed/trade_dummy_icio_2000_2023.csv
+-> outputs/matched_data/match_y_x/{year}/
 ```
 
 因此，回归匹配阶段直接读取的是
 `trade_dummy_icio_2000_2023.csv`，而不是重新计算条款得分。
+上述 fractional 匹配产品已搬至 `outputs/matched_data`，配置默认
+`output_root` 与此一致。原版本路径通过 `configs/historical_path_mappings.json`
+追溯；已有构建清单的路径、哈希和运行信息保留原文。Stata 仍直接读取本项目
+之外、其自身 `data/raw/io/` 下的独立快照，再构建 OLS/PPML 数据。
 
 国内 `raw_trade_score` 和 `raw_mp_score` 是结构性 0。当前 2000、2019
 均为 76×76＝5,776 个有向国家对，X 匹配率为 100%。
@@ -521,23 +550,37 @@ iso_d_match
 每次合并前后行数必须完全一致。国家对字段保持有向匹配，不得擅自交换
 来源国和目的国。
 
+匹配层先按配置默认删除 `ROW` 与本国国家对，再将筛选后的 Y-X 作为控制变量
+匹配左表。显式 `keep_domestic: true` 可在 DTA 保留本国对；Stata 实证构建仍
+检查并兜底删除 ROW/本国对，兼容保留本国对的旧输入快照。当前实证部门范围为 Trade
+部门 1–19、MP 部门 1–20。Trade 的部门 20 在匹配层可以保留，但因没有关税
+源记录而保持关税缺失；Stata 的 Trade 样本在下游限定为 1–19。这一层级差异
+不构成匹配键失败或 Y 行丢失。
+
 控制变量自由的 Y-X 输出：
 
 ```text
-result/model_inputs/match_y_x/{year}/
+outputs/matched_data/match_y_x/{year}/
 ```
 
 贸易控制变量输出：
 
 ```text
-result/model_inputs/match_y_x_cons/trade_candidate_pool_v1/{year}/
+outputs/matched_data/match_y_x_cons/trade_candidate_pool_v1/{year}/
 ```
 
 MP 控制变量输出：
 
 ```text
-result/model_inputs/match_y_x_cons/mp_controls_v1/{year}/
+outputs/matched_data/match_y_x_cons/mp_controls_v1/{year}/
 ```
+
+2019 年 Trade 的 CSV→DTA 导出存在研究者已接受的微小保存精度差异。
+`2026-09-14` 只读审计记录的匹配层最大相对差为
+`5.945716743e-8`，下游 Stata 实证样本（Trade 部门 1–19、排除本国对和
+`ROW`）的最大绝对差为 `0.0034375`；零值/正值分类未改变。本差异不修复，
+后续不得表述为 CSV 与 DTA 或原始 Y 严格逐位一致。该审计没有检验对新回归
+系数的影响，也不作“无新回归影响”的断言。
 
 声明某个现有输出与当前输入一致前，必须比较 `build_manifest.json` 中的
 输入 SHA256 与当前源文件。若源文件后更新但相关字段经逐列核验没有变化，
@@ -684,3 +727,18 @@ AGENTS.md 第 12 节的当前事实清单和最后核验日期
 不得把聊天记忆、旧版 `result/regression_2019`、候选变量名称或过期 README
 当作高于当前可执行代码和配置的事实来源。研究者尚未作出的最终变量选择必须
 明确标记为“候选/待决定”，不得由 agent 擅自替用户决定。
+
+
+## 目录与归档长期规则
+
+- 保留现有有效数据入口；目录整理不得修改数据、权重、变量定义、样本或估计规格。
+- 历史备份统一位于同级 `../project_archive/<所属项目>/<备份类型>/<版本>/`；当前代码与数据不依赖其他项目的去重副本。
+- 历史运行的代码、输入、日志、manifest、结果作为整体保存。不可变快照不去重、不覆盖。
+- 临时缓存先核实用途，有恢复价值者进入所属归档的“待清理”区；不得按未跟踪状态或扩展名批量删除。
+- 移动前记录清单与引用；复制后逐文件核对数量、大小、SHA256，再移除精确源文件；保留恢复映射。
+- 历史日志与 manifest 的原路径、哈希、时间保持原文，现行辅助读取通过映射解析，不把搬移当作新运行。
+- 当前路径及命令维护在 README；阶段日期、哈希、操作清单和验收结果放在独立整理记录中，不写入本节。
+
+- 当前匹配输出采用 `outputs/matched_data/`，逐步数据和文件名沿用匹配数据契约；OLS/PPML 的估计结果仍归 Stata 项目管理。
+- 有版本信息的路径映射放在 `configs/historical_path_mappings.json`，不得把历史 manifest 改写为新运行。
+- 历史位置适配由 `src/archive_paths.py` 负责；迁移工具仅写工作副本，不对集中归档直接应用历史修复。原 `migration_backups` 不可修改规则同样适用于集中归档后的内容。

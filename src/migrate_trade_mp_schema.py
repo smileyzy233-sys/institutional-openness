@@ -32,6 +32,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from archive_paths import archive_root, historical_path, logical_relative
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 IMPACT_LABEL_SCHEMA_VERSION = "trade_mp_v1"
@@ -40,10 +42,7 @@ CATEGORY_VALUE_MAP = {"mp": "trade", "tr": "mp"}
 LEGACY_MAIN_PROMPT_NAME = "stage2_trade_investment.txt"
 LEGACY_ARBITRATION_PROMPT_NAME = "stage2_type_arbitration.txt"
 PREFLIGHT_MANIFEST_PATH = (
-    PROJECT_ROOT
-    / "migration_backups"
-    / "20260724_pre_trade_mp"
-    / "preflight_manifest.json"
+    historical_path(PROJECT_ROOT, "migration_backups/20260724_pre_trade_mp/preflight_manifest.json")
 )
 
 EXACT_COLUMN_MAP = {
@@ -333,7 +332,7 @@ def preflight_hashes() -> dict[str, str]:
 
 def legacy_prompt_sha_for_csv(csv_path: Path, prompt_name: str) -> str:
     hashes = preflight_hashes()
-    relative = csv_path.resolve().relative_to(PROJECT_ROOT)
+    relative = logical_relative(PROJECT_ROOT, csv_path)
     for parent in (relative.parent, *relative.parents):
         candidate = (parent / "prompts" / prompt_name).as_posix()
         if candidate in hashes:
@@ -489,12 +488,8 @@ def preflight_additional_targets() -> list[Path]:
         "tests/test_stage2_validation.py",
         "tests/test_stage2_weight_resolution.py",
     ]
-    targets = [PROJECT_ROOT / path for path in relative_paths]
-    targets.extend(
-        path
-        for path in (PROJECT_ROOT / "old data").rglob("*.txt")
-        if path.name in {LEGACY_MAIN_PROMPT_NAME, LEGACY_ARBITRATION_PROMPT_NAME}
-    )
+    targets = [historical_path(PROJECT_ROOT, path) for path in relative_paths]
+    # Archived historical batches are immutable and excluded from new migrations.
     return sorted({path.resolve() for path in targets if path.exists()})
 
 
@@ -510,7 +505,7 @@ def prepare_backup(
     files_dir.mkdir(parents=True, exist_ok=True)
     records = []
     for path in sorted({item.resolve() for item in paths}):
-        relative = path.relative_to(PROJECT_ROOT)
+        relative = logical_relative(PROJECT_ROOT, path)
         destination = files_dir / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, destination)
@@ -527,7 +522,7 @@ def prepare_backup(
         for path in sorted((PROJECT_ROOT / "docs").glob(pattern)):
             ppt_records.append(
                 {
-                    "path": path.relative_to(PROJECT_ROOT).as_posix(),
+                    "path": logical_relative(PROJECT_ROOT, path).as_posix(),
                     "sha256": sha256_file(path),
                     "size_bytes": path.stat().st_size,
                 }
@@ -562,7 +557,7 @@ def prepare_backup(
             archive.write(source, arcname=record["path"])
         archive.write(manifest_path, arcname="preflight_manifest.json")
     manifest["archive"] = {
-        "path": archive_path.relative_to(PROJECT_ROOT).as_posix(),
+        "path": Path(os.path.relpath(archive_path, PROJECT_ROOT)).as_posix(),
         "sha256": sha256_file(archive_path),
         "size_bytes": archive_path.stat().st_size,
     }
@@ -661,7 +656,7 @@ def migrate_rows(
                 for review in reviews:
                     reason_reviews.append(
                         {
-                            "path": path.relative_to(PROJECT_ROOT).as_posix(),
+                            "path": logical_relative(PROJECT_ROOT, path).as_posix(),
                             "row_number": str(row_number),
                             "column": target_column,
                             **review,
@@ -672,7 +667,7 @@ def migrate_rows(
                 for review in reviews:
                     reason_reviews.append(
                         {
-                            "path": path.relative_to(PROJECT_ROOT).as_posix(),
+                            "path": logical_relative(PROJECT_ROOT, path).as_posix(),
                             "row_number": str(row_number),
                             "column": target_column,
                             **review,
@@ -772,6 +767,8 @@ def migrate_file(
     *,
     dry_run: bool,
 ) -> tuple[MigrationAudit, list[dict[str, str]]]:
+    if not dry_run and path.resolve().is_relative_to(archive_root(PROJECT_ROOT).resolve()):
+        raise ValueError("Archived history is immutable; restore a working copy before migration.")
     before_bytes = path.read_bytes()
     sha_before = sha256_bytes(before_bytes)
     columns, rows = read_csv_rows(path)
@@ -819,7 +816,7 @@ def migrate_file(
             sha_after = write_csv_atomic(path, new_columns, new_rows)
 
     audit = MigrationAudit(
-        path=path.relative_to(PROJECT_ROOT).as_posix(),
+        path=logical_relative(PROJECT_ROOT, path).as_posix(),
         changed=changed,
         dry_run=dry_run,
         sha256_before=sha_before,
@@ -935,8 +932,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=[
             PROJECT_ROOT / "data",
-            PROJECT_ROOT / "result",
-            PROJECT_ROOT / "old data",
+            PROJECT_ROOT / "outputs",
         ],
     )
     parser.add_argument("--paths", nargs="*", type=Path, default=None)
@@ -959,7 +955,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--backup-dir",
         type=Path,
-        default=PROJECT_ROOT / "migration_backups" / "20260724_pre_trade_mp",
+        default=archive_root(PROJECT_ROOT) / "migration_backups" / datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
     )
     parser.add_argument("--git-commit", default="")
     parser.add_argument("--git-status-file", type=Path, default=None)

@@ -4,7 +4,19 @@ import numpy as np
 import pandas as pd
 
 import config
-from utils import assert_impact_label_schema, ensure_directories, read_csv, write_csv
+from pipeline_safety import protected_step, step_cli
+from utils import (
+    agreement_score_inputs,
+    assert_impact_label_schema,
+    check_agreement_score_provenance,
+    check_final_weights_provenance,
+    ensure_directories,
+    read_csv,
+    score_provenance_path,
+    score_provenance_record,
+    write_csv,
+    write_json,
+)
 
 
 def unique_join(values: pd.Series) -> str:
@@ -77,8 +89,11 @@ def validate_inputs(agreement_indices: pd.DataFrame, weights: pd.DataFrame) -> N
     assert_impact_label_schema(weights, "final_provision_weights.csv")
 
 
+@protected_step(__file__)
 def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
     """Compute country-pair-year raw scores and retain the union default."""
+    check_final_weights_provenance()
+    check_agreement_score_provenance()
     ensure_directories()
     if method not in {"union", "max", "mean"}:
         raise ValueError("method must be one of: union, max, mean")
@@ -195,6 +210,18 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
     ]
     out = out[[col for col in first_cols if col in out.columns]]
     write_csv(out, config.COUNTRY_PAIR_YEAR_INDICES_PATH)
+    write_json(
+        score_provenance_record(
+            config.COUNTRY_PAIR_YEAR_INDICES_PATH,
+            {
+                **agreement_score_inputs(),
+                "agreement_level_indices": config.AGREEMENT_LEVEL_INDICES_PATH,
+                "bilateral_panel": config.BILATERAL_PANEL_PATH,
+            },
+            {"output_float_decimals": config.OUTPUT_FLOAT_DECIMALS, "method": method},
+        ),
+        score_provenance_path(config.COUNTRY_PAIR_YEAR_INDICES_PATH),
+    )
     print(
         f"Wrote country-pair-year raw scores and agreement dummy for {len(out):,} rows "
         f"to {config.COUNTRY_PAIR_YEAR_INDICES_PATH}"
@@ -202,4 +229,4 @@ def run(method: str = config.MULTI_AGREEMENT_METHOD) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

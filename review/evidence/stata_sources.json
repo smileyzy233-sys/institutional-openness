@@ -1,0 +1,18 @@
+{
+  "copied_at": "2026-09-15",
+  "executed": false,
+  "files": [
+    {
+      "source_project": "stata_institutional_opening",
+      "source_path": "explorations/io_trade_longdiff_data/dofiles/01_build_trade_long_difference_data.do",
+      "public_path": "review/stata_build/01_build_trade_long_difference_data.do",
+      "sha256": "88cc571a31f426826384ffe4892d09e79ad8cd03f8505248fecb74f9ad477ad0"
+    },
+    {
+      "source_project": "stata_institutional_opening",
+      "source_path": "explorations/io_mp_longdiff_data/dofiles/01_build_mp_long_difference_data.do",
+      "public_path": "review/stata_build/01_build_mp_long_difference_data.do",
+      "sha256": "8f32d266197d2ede7c0ec48f6b4f7cbb4012e473b4a74588eded843d97ee1ae5"
+    }
+  ]
+}

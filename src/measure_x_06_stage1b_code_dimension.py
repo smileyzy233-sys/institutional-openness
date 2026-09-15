@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step
 from utils import (
     call_provider,
     check_stage1a_gate,
@@ -289,6 +290,7 @@ def filter_current_rows(
     return existing.loc[mask].copy()
 
 
+@protected_step(__file__)
 def run(
     *,
     model_role: str = "A",
@@ -320,8 +322,6 @@ def run(
         stage1a_final_sha256,
         model_role,
     )
-    if not resume and output_path.exists():
-        output_path.unlink()
     existing = read_csv(output_path) if resume and output_path.exists() else pd.DataFrame()
     current_existing = filter_current_rows(
         existing,
@@ -443,6 +443,7 @@ def main() -> None:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     run(
         model_role=args.model_role,
@@ -451,8 +452,10 @@ def main() -> None:
         base_url=args.base_url,
         output_path=args.output,
         prompt_path=args.prompt_path,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
+        force=args.force,
+        dry_run=args.dry_run,
     )
 
 

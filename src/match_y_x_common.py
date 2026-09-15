@@ -109,6 +109,70 @@ def normalize_iso_series(
     return series.map(lambda value: normalize_iso3(value, aliases))
 
 
+def effective_row_policy(specs: dict[str, Any]) -> dict[str, bool]:
+    """Resolve the existing switches; omitted settings use the international sample."""
+    configured = specs.get("row_policy", {})
+    if not isinstance(configured, dict):
+        raise ValueError("row_policy must be an object")
+    policy = {
+        "drop_row": configured.get("drop_row", True),
+        "keep_domestic": configured.get("keep_domestic", False),
+    }
+    if any(type(value) is not bool for value in policy.values()):
+        raise ValueError("row_policy.drop_row and keep_domestic must be JSON booleans")
+    return policy
+
+
+def country_pair_masks(data: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Compare trimmed, case-insensitive ISO values without aliases or source edits."""
+    origin = data["iso_o"].astype("string").fillna("").str.strip().str.upper()
+    destination = data["iso_d"].astype("string").fillna("").str.strip().str.upper()
+    row = origin.eq("ROW") | destination.eq("ROW")
+    domestic = origin.ne("") & destination.ne("") & origin.eq(destination)
+    return row, domestic
+
+
+def apply_row_policy(
+    data: pd.DataFrame, specs: dict[str, Any]
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Apply one union mask and retain an audit of overlapping classifications."""
+    policy = effective_row_policy(specs)
+    row, domestic = country_pair_masks(data)
+    dropped = (row & policy["drop_row"]) | (domestic & (not policy["keep_domestic"]))
+    out = data.loc[~dropped].copy()
+    out["is_row_pair"] = row.loc[~dropped].astype(np.int8)
+    out["is_domestic_pair"] = domestic.loc[~dropped].astype(np.int8)
+    audit = {
+        "row_policy": policy,
+        "rows_before": len(data),
+        "row_rows_before": int(row.sum()),
+        "domestic_rows_before": int(domestic.sum()),
+        "overlap_rows_before": int((row & domestic).sum()),
+        "rows_dropped": int(dropped.sum()),
+        "rows_after": len(out),
+        "row_rows_after": int(row.loc[~dropped].sum()),
+        "domestic_rows_after": int(domestic.loc[~dropped].sum()),
+    }
+    return out, audit
+
+
+def validate_row_policy_acceptance(
+    audit: dict[str, Any], specs: dict[str, Any], equation: str, year: int
+) -> None:
+    """Keep source-size gates independent of the optional domestic-pair switch."""
+    acceptance = specs.get("acceptance", {}).get(str(year), {})
+    observed = {
+        f"{equation}_source_rows": audit["rows_before"],
+        f"{equation}_rows_excluding_row": audit["rows_before"] - audit["row_rows_before"],
+    }
+    for key, count in observed.items():
+        if key in acceptance and count != int(acceptance[key]):
+            raise ValueError(
+                f"{equation} row acceptance failed for {year}: {key} "
+                f"expected={acceptance[key]}, observed={count}"
+            )
+
+
 def _assert_project_relative(path_text: str, field: str) -> None:
     path = Path(path_text)
     if path.is_absolute():
@@ -132,7 +196,6 @@ def load_matching_specs(
     specs = json.loads(path.read_text(encoding="utf-8"))
     required = {
         "years",
-        "row_policy",
         "iso_aliases",
         "equations",
         "pair_year_source",
@@ -143,6 +206,7 @@ def load_matching_specs(
     missing = required.difference(specs)
     if missing:
         raise ValueError(f"Matching configuration is missing keys: {sorted(missing)}")
+    specs["row_policy"] = effective_row_policy(specs)
     for field in [
         "pair_year_source",
         "gravity_path",

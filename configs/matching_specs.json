@@ -6,7 +6,7 @@
   ],
   "row_policy": {
     "drop_row": true,
-    "keep_domestic": true
+    "keep_domestic": false
   },
   "iso_aliases": {
     "ROM": "ROU"
@@ -18,7 +18,7 @@
     "2000": "control__variable/tariff2000.dta"
   },
   "gravity_path": "control__variable/Gravity_V202211.csv",
-  "output_root": "result/model_inputs",
+  "output_root": "outputs/matched_data",
   "expected_pairs_per_year": 5776,
   "equations": {
     "trade": {
@@ -260,9 +260,9 @@
   "acceptance": {
     "2000": {
       "trade_source_rows": 118580,
-      "trade_rows_after_row_policy": 115520,
+      "trade_rows_excluding_row": 115520,
       "mp_source_rows": 118580,
-      "mp_rows_after_row_policy": 115520,
+      "mp_rows_excluding_row": 115520,
       "tariff_sectors": [
         1,
         19
@@ -270,9 +270,9 @@
     },
     "2019": {
       "trade_source_rows": 118580,
-      "trade_rows_after_row_policy": 115520,
+      "trade_rows_excluding_row": 115520,
       "mp_source_rows": 243089,
-      "mp_rows_after_row_policy": 236816,
+      "mp_rows_excluding_row": 236816,
       "trade_zero_rate_approx": 0.053454,
       "mp_zero_rate_approx": 0.614291,
       "tariff_sectors": [

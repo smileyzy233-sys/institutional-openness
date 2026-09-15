@@ -10,13 +10,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from archive_paths import historical_path
+
 import numpy as np
 import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKUP_ROOT = (
-    ROOT / "migration_backups" / "20260724_pre_trade_mp" / "files"
+    historical_path(ROOT, "migration_backups/20260724_pre_trade_mp/files")
 )
 
 
@@ -52,7 +54,7 @@ def compare_migrated_file(
     category_mappings: list[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
     old = pd.read_csv(BACKUP_ROOT / relative_path, low_memory=False)
-    current = pd.read_csv(ROOT / relative_path, low_memory=False)
+    current = pd.read_csv(historical_path(ROOT, relative_path), low_memory=False)
     merged = old.merge(
         current,
         on=keys,
@@ -449,7 +451,7 @@ def load_base_and_output(
     source = source.loc[
         ~(source["iso_o"].eq("ROW") | source["iso_d"].eq("ROW"))
     ].copy()
-    output = pd.read_csv(ROOT / output_relative_path, low_memory=False)
+    output = pd.read_csv(historical_path(ROOT, output_relative_path), low_memory=False)
     return source, output
 
 
@@ -473,7 +475,7 @@ def audit_dependent_variables() -> pd.DataFrame:
     for equation, source_path, csv_path, dta_path in specifications:
         source, csv_output = load_base_and_output(source_path, csv_path)
         dta_output = pd.read_stata(
-            ROOT / dta_path, convert_categoricals=False
+            historical_path(ROOT, dta_path), convert_categoricals=False
         )
         csv_merged = source.merge(
             csv_output,
@@ -567,12 +569,12 @@ def audit_pair_controls() -> pd.DataFrame:
     for equation, path, score_column in [
         (
             "trade",
-            ROOT / "result/regression_2019/trade_cost_2019_matched.csv",
+            historical_path(ROOT, "result/regression_2019/trade_cost_2019_matched.csv"),
             "raw_trade_score",
         ),
         (
             "mp",
-            ROOT / "result/regression_2019/mp_cost_2019_matched.csv",
+            historical_path(ROOT, "result/regression_2019/mp_cost_2019_matched.csv"),
             "raw_mp_score",
         ),
     ]:
@@ -663,7 +665,7 @@ def audit_pair_controls() -> pd.DataFrame:
 
 def audit_tariffs() -> pd.DataFrame:
     trade = pd.read_csv(
-        ROOT / "result/regression_2019/trade_cost_2019_matched.csv",
+        historical_path(ROOT, "result/regression_2019/trade_cost_2019_matched.csv"),
         low_memory=False,
     )
     tariff = pd.read_csv(
@@ -785,7 +787,7 @@ def load_gravity_2019(trade: pd.DataFrame) -> tuple[pd.DataFrame, int]:
 
 def audit_gravity() -> tuple[pd.DataFrame, pd.DataFrame]:
     trade = pd.read_csv(
-        ROOT / "result/regression_2019/trade_cost_2019_matched.csv",
+        historical_path(ROOT, "result/regression_2019/trade_cost_2019_matched.csv"),
         low_memory=False,
     )
     gravity, scanned_rows = load_gravity_2019(trade)
@@ -967,11 +969,11 @@ def audit_gravity() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def audit_sample_flags() -> pd.DataFrame:
     trade = pd.read_csv(
-        ROOT / "result/regression_2019/trade_cost_2019_matched.csv",
+        historical_path(ROOT, "result/regression_2019/trade_cost_2019_matched.csv"),
         low_memory=False,
     )
     mp = pd.read_csv(
-        ROOT / "result/regression_2019/mp_cost_2019_matched.csv",
+        historical_path(ROOT, "result/regression_2019/mp_cost_2019_matched.csv"),
         low_memory=False,
     )
     trade_required = [

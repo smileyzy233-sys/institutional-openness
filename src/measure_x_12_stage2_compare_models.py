@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     as_bool_series,
     check_stage1_gate,
@@ -55,14 +56,12 @@ def prefix_model(frame: pd.DataFrame, prefix: str) -> pd.DataFrame:
 def mark_stale_and_raise(frame: pd.DataFrame, path, current_hash: str) -> None:
     stale = ~frame["stage1_final_sha256"].eq(current_hash)
     if stale.any():
-        frame = frame.copy()
-        frame["stale"] = stale
-        write_csv(frame, path)
         raise RuntimeError(
             f"Stage 2 results in {path} are stale because stage1_final_sha256 changed."
         )
 
 
+@protected_step(__file__)
 def run() -> None:
     ensure_directories()
     check_stage1_gate()
@@ -190,4 +189,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

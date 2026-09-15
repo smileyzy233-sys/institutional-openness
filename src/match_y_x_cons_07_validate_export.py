@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from archive_paths import historical_path, logical_relative
 from match_y_x_common import (
     Y_KEY,
     assert_stata_columns,
@@ -34,6 +35,7 @@ from match_y_x_cons_common import (
     control_output_paths,
     get_control_spec,
     read_y_x_base,
+    validate_y_x_policy,
 )
 
 
@@ -129,7 +131,7 @@ def _legacy_overlap(
         if equation == "trade"
         else f"mp_cost_{year}_matched.csv"
     )
-    old_path = project_dir / "result" / f"regression_{year}" / old_name
+    old_path = historical_path(project_dir, Path("result") / f"regression_{year}" / old_name)
     if not old_path.exists():
         raise FileNotFoundError(f"Legacy comparison file is missing: {old_path}")
     old = pd.read_csv(old_path, low_memory=False)
@@ -170,7 +172,7 @@ def _legacy_overlap(
             f"Legacy overlapping fields differ for {equation} {year}: {mismatched}"
         )
     return {
-        "legacy_path": str(old_path.relative_to(project_dir)),
+        "legacy_path": logical_relative(project_dir, old_path).as_posix(),
         "rows": len(data),
         "overlap_columns": common,
         "mismatch_counts": mismatch_counts,
@@ -601,7 +603,9 @@ def _preflight_paths(
                 raise FileNotFoundError(
                     f"Missing {equation} Y-X input for {year}: {path}"
                 )
+            validate_y_x_policy(project_dir, specs, equation, year, output_root)
             inputs.append(str(path))
+        inputs.append(str(yx_paths["manifest"]))
         paths = control_output_paths(
             project_dir, specs, control_spec_name, year, output_root
         )
@@ -757,6 +761,7 @@ def run(
             "years": selected_years,
             "control_spec": control_spec,
             "equations": configured["equations"],
+            "row_policy": specs["row_policy"],
             "selected_controls": {
                 equation: configured[equation]["selected_controls"]
                 for equation in configured["equations"]
@@ -803,6 +808,14 @@ def run(
         merge_diagnostics: dict[str, list[dict[str, Any]]] = {}
         source_diagnostics: dict[str, Any] = {}
         input_paths: dict[str, Path] = {}
+        yx_paths = y_x_output_paths(root, specs, year, output_root)
+        input_paths["y_x_manifest"] = yx_paths["manifest"]
+        source_diagnostics["y_x_row_policy"] = {
+            "row_policy": specs["row_policy"],
+            "compatibility_check": "passed",
+            "filtering_stage": "match_y_x_02_prepare_y",
+            "rows_dropped_during_control_matching": 0,
+        }
         pair_controls, pair_diag = pair_module.prepare_pair_controls(
             root, specs, year
         )

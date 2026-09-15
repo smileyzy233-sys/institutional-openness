@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     as_bool,
     as_bool_series,
@@ -158,6 +159,7 @@ def write_manifest(stage1a_final: pd.DataFrame, run_id: str) -> None:
     )
 
 
+@protected_step(__file__)
 def run(*, allow_unresolved: bool = config.ALLOW_UNRESOLVED) -> None:
     ensure_directories()
     clear_success()
@@ -264,4 +266,4 @@ def run(*, allow_unresolved: bool = config.ALLOW_UNRESOLVED) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

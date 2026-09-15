@@ -3,3 +3,7 @@
 *.xlsx binary
 *.png binary
 *.dta binary
+*.pptx binary
+# Preserve exact bytes for published audit evidence and copied Stata sources.
+review/evidence/** -text
+review/stata_build/** -text

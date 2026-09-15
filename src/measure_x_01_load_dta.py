@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     agreement_id_from_wbid,
     agreement_sort_key,
@@ -126,6 +127,7 @@ def build_bilateral_panel(bilateral_df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
+@protected_step(__file__)
 def run(raw_path: Path = config.RAW_DATA_PATH) -> None:
     """Read DTA 2.0 and write MVP interim files."""
     ensure_directories()
@@ -153,4 +155,4 @@ def run(raw_path: Path = config.RAW_DATA_PATH) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

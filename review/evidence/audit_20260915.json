@@ -1,0 +1,494 @@
+{
+  "schema": "review_bundle_audit_v1",
+  "status": "pass",
+  "failures": [],
+  "checks": {
+    "matrix": {
+      "status": "pass",
+      "workbook_rows": 1071,
+      "workbook_agreements": 400,
+      "blank_cells": 39284,
+      "partial_cells": 1970,
+      "agreement_id_order": true,
+      "provision_id_order": true,
+      "value_mismatches": 0,
+      "max_abs_diff": 0.0,
+      "files": [
+        "data\\raw\\DTA 2.0 - Vertical Content (v2)_code.xlsx",
+        "data\\interim\\agreement_matrix.csv"
+      ]
+    },
+    "weights": {
+      "status": "pass",
+      "rows": 1071,
+      "id_sets_match": true,
+      "valid_effective_weights": true,
+      "canonical_by_impact_type": true,
+      "classification_mismatches": {
+        "final_is_institutional_opening": 0,
+        "final_dominant_dimension": 0,
+        "policy_area": 0,
+        "original_coding": 0
+      },
+      "provision_text_exact_mismatches": 16,
+      "provision_text_crlf_normalized_mismatches": 0,
+      "files": [
+        "data\\processed\\final_provision_weights.csv",
+        "data\\processed\\stage1_final_classification.csv",
+        "data\\interim\\provisions_master.csv"
+      ]
+    },
+    "scores": {
+      "agreement_level_matrix_times_weights": {
+        "status": "pass",
+        "rows": 400,
+        "mismatched_cells": 0,
+        "max_abs_diff": 0.0,
+        "rounding_decimals": 6
+      },
+      "country_pair_saved_list_max": {
+        "status": "pass",
+        "rows": 246917,
+        "unique_saved_lists": 707,
+        "invalid_saved_lists": 0,
+        "mismatched_cells": 0,
+        "max_abs_diff": 0.0,
+        "basis": "saved agreement_id_list in country_pair_year_indices.csv; existing effective agreement list"
+      },
+      "country_to_active_scores": {
+        "status": "pass",
+        "rows": 123488,
+        "expected_rows": 123488,
+        "keys_match": true,
+        "finite": true,
+        "max_abs_diff": 0.0,
+        "mismatched_cells": 0,
+        "directional_scores_consistent": true
+      },
+      "full_pair_scores_and_structural_zeros": {
+        "status": "pass",
+        "rows": 138624,
+        "expected_rows": 138624,
+        "keys_match": true,
+        "finite": true,
+        "max_abs_diff": 0.0,
+        "mismatched_cells": 0
+      },
+      "pair_dummy_scores": {
+        "status": "pass",
+        "rows": 55018,
+        "pair_dummy_one_rows": 55018,
+        "unmatched_active": 0,
+        "mismatched_cells": 0,
+        "max_abs_diff": 0.0
+      },
+      "files": [
+        "data\\processed\\agreement_level_indices.csv",
+        "data\\processed\\country_pair_year_indices.csv",
+        "data\\processed\\dta_active_agreement_dummy_all_dta_pair_year.csv",
+        "data\\processed\\trade_dummy_icio_2000_2023.csv"
+      ]
+    },
+    "cons_dta": {
+      "status": "pass",
+      "products": [
+        {
+          "status": "pass",
+          "equation": "trade",
+          "year": 2000,
+          "rows": 115520,
+          "duplicate_keys": 0,
+          "csv_dta_mismatches": 0,
+          "pair_score_mismatches": 0,
+          "pair_dummy_mismatches": 0,
+          "max_pair_score_abs_diff": 0.0,
+          "files": [
+            "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2000\\trade_y_x_cons_2000.csv",
+            "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2000\\trade_y_x_cons_2000.dta",
+            "data\\processed\\trade_dummy_icio_2000_2023.csv"
+          ]
+        },
+        {
+          "status": "pass",
+          "equation": "trade",
+          "year": 2019,
+          "rows": 115520,
+          "duplicate_keys": 0,
+          "csv_dta_mismatches": 0,
+          "pair_score_mismatches": 0,
+          "pair_dummy_mismatches": 0,
+          "max_pair_score_abs_diff": 0.0,
+          "files": [
+            "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2019\\trade_y_x_cons_2019.csv",
+            "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2019\\trade_y_x_cons_2019.dta",
+            "data\\processed\\trade_dummy_icio_2000_2023.csv"
+          ]
+        },
+        {
+          "status": "pass",
+          "equation": "mp",
+          "year": 2000,
+          "rows": 115520,
+          "duplicate_keys": 0,
+          "csv_dta_mismatches": 0,
+          "pair_score_mismatches": 0,
+          "pair_dummy_mismatches": 0,
+          "max_pair_score_abs_diff": 0.0,
+          "files": [
+            "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2000\\mp_y_x_cons_2000.csv",
+            "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2000\\mp_y_x_cons_2000.dta",
+            "data\\processed\\trade_dummy_icio_2000_2023.csv"
+          ]
+        },
+        {
+          "status": "pass",
+          "equation": "mp",
+          "year": 2019,
+          "rows": 236816,
+          "duplicate_keys": 0,
+          "csv_dta_mismatches": 0,
+          "pair_score_mismatches": 0,
+          "pair_dummy_mismatches": 0,
+          "max_pair_score_abs_diff": 0.0,
+          "files": [
+            "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2019\\mp_y_x_cons_2019.csv",
+            "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2019\\mp_y_x_cons_2019.dta",
+            "data\\processed\\trade_dummy_icio_2000_2023.csv"
+          ]
+        }
+      ]
+    },
+    "manifests": {
+      "status": "pass",
+      "manifest_count": 6,
+      "input_failures": 0,
+      "row_policy_known_state": {
+        "historical_keep_domestic_true_manifests": 6,
+        "current_config": {
+          "drop_row": true,
+          "keep_domestic": false
+        },
+        "classification": "known_state"
+      },
+      "manifests": [
+        {
+          "manifest": "outputs\\matched_data\\match_y_x\\2000\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "trade",
+              "path": "Explained_variable\\icio2000.dta",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "6231439331451f854e9eb501c10e66871d283cef30ac47744e8e3e64a168ce86"
+            },
+            {
+              "name": "mp",
+              "path": "Explained_variable\\amne2000.dta",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "16d01b3719ced30d2502eb7ac4004490a51608df58dbbf91a34f6b4afad11d91"
+            },
+            {
+              "name": "pair_year_source",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            }
+          ]
+        },
+        {
+          "manifest": "outputs\\matched_data\\match_y_x\\2019\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "trade",
+              "path": "Explained_variable\\icio2019.dta",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "57727e6bb57184db579ddd001b2ed66cf9e2cbd5c967e6669591b22fcc82d978"
+            },
+            {
+              "name": "mp",
+              "path": "Explained_variable\\amne2019.dta",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "7c03125642bf2048e29bec5391b8ecbdd2cee07c78007658c8760faed20e7de7"
+            },
+            {
+              "name": "pair_year_source",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            }
+          ]
+        },
+        {
+          "manifest": "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2000\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "pair_controls",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            },
+            {
+              "name": "mp_y_x",
+              "path": "outputs\\matched_data\\match_y_x\\2000\\mp_y_x_2000.csv",
+              "mapped_by_archive": true,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "408d599aa83e49e2da0bd3413709b852a902bec4b0bafcf148c2492380e9155b"
+            }
+          ]
+        },
+        {
+          "manifest": "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2019\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "pair_controls",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            },
+            {
+              "name": "mp_y_x",
+              "path": "outputs\\matched_data\\match_y_x\\2019\\mp_y_x_2019.csv",
+              "mapped_by_archive": true,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "6a3700e5dc4a7c9350aad72db10efcb76f7d75fe06019f05e591dd432cbbbe2f"
+            }
+          ]
+        },
+        {
+          "manifest": "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2000\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "pair_controls",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            },
+            {
+              "name": "trade_y_x",
+              "path": "outputs\\matched_data\\match_y_x\\2000\\trade_y_x_2000.csv",
+              "mapped_by_archive": true,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "528d6062ac940fab210a5620516e80cbc0cde0403d75456bd52b1141ce88707e"
+            },
+            {
+              "name": "tariff",
+              "path": "control__variable\\tariff2000.dta",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "a2a12dbf8ee3114c76677362347df159aade44bec00f941621699a9fab88e300"
+            },
+            {
+              "name": "gravity",
+              "path": "control__variable\\Gravity_V202211.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "c5611acb52288c537786dda86f2c3319cdd04cc94e8c9328dde936510a17c739"
+            }
+          ]
+        },
+        {
+          "manifest": "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2019\\build_manifest.json",
+          "row_policy": {
+            "drop_row": true,
+            "keep_domestic": true
+          },
+          "inputs": [
+            {
+              "name": "pair_controls",
+              "path": "data\\processed\\trade_dummy_icio_2000_2023.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "521e78ada3db95836870c62213fe3e4dc969878f5042ca461d5d1d745678a0b4"
+            },
+            {
+              "name": "trade_y_x",
+              "path": "outputs\\matched_data\\match_y_x\\2019\\trade_y_x_2019.csv",
+              "mapped_by_archive": true,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "5a13f55fecbaab4f7c8d6de218a46a06a628b9a4925e4ccdf8c570b5ed817299"
+            },
+            {
+              "name": "tariff",
+              "path": "control__variable\\tariff_2019.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "17eae45c5814713dbcfcec45bdf6b5b21f55a1c2b17cc724cd9ae32b5c1c1600"
+            },
+            {
+              "name": "gravity",
+              "path": "control__variable\\Gravity_V202211.csv",
+              "mapped_by_archive": false,
+              "exists": true,
+              "hash_matches": true,
+              "sha256": "c5611acb52288c537786dda86f2c3319cdd04cc94e8c9328dde936510a17c739"
+            }
+          ]
+        }
+      ]
+    },
+    "stata": {
+      "status": "pass",
+      "raw_snapshots": [
+        {
+          "equation": "trade",
+          "year": 2000,
+          "cons_path": "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2000\\trade_y_x_cons_2000.dta",
+          "raw_path": "data\\raw\\io\\gravity_resolved_fractional_20260914\\trade_y_x_cons_2000.dta",
+          "rows": 115520,
+          "hash_matches": true,
+          "sha256": "3dcdc5e8230cdc0e3ba9996805fbe58a0d621792eea4b816355a0d198f435615"
+        },
+        {
+          "equation": "trade",
+          "year": 2019,
+          "cons_path": "outputs\\matched_data\\match_y_x_cons\\trade_candidate_pool_v1\\2019\\trade_y_x_cons_2019.dta",
+          "raw_path": "data\\raw\\io\\gravity_resolved_fractional_20260914\\trade_y_x_cons_2019.dta",
+          "rows": 115520,
+          "hash_matches": true,
+          "sha256": "4d25d88b685d1825359c64e5e89f74d86198cebb99d99a0dbf8106af12cf9a52"
+        },
+        {
+          "equation": "mp",
+          "year": 2000,
+          "cons_path": "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2000\\mp_y_x_cons_2000.dta",
+          "raw_path": "data\\raw\\io\\gravity_resolved_fractional_20260914\\mp_y_x_cons_2000.dta",
+          "rows": 115520,
+          "hash_matches": true,
+          "sha256": "7d089ba183eb4c757feb6d432dda7c25606c0ce01048704df6a2506eeccd03d6"
+        },
+        {
+          "equation": "mp",
+          "year": 2019,
+          "cons_path": "outputs\\matched_data\\match_y_x_cons\\mp_controls_v1\\2019\\mp_y_x_cons_2019.dta",
+          "raw_path": "data\\raw\\io\\gravity_resolved_fractional_20260914\\mp_y_x_cons_2019.dta",
+          "rows": 236816,
+          "hash_matches": true,
+          "sha256": "9160c047d450508df7f34020754c6c3d92290f2bbcc9c76a5ea1083c42b474ed"
+        }
+      ],
+      "derived": [
+        {
+          "status": "pass",
+          "equation": "trade",
+          "year": 2000,
+          "dataset": "ppml",
+          "rows": 108300,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        },
+        {
+          "status": "pass",
+          "equation": "trade",
+          "year": 2019,
+          "dataset": "ppml",
+          "rows": 108300,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        },
+        {
+          "status": "pass",
+          "equation": "trade",
+          "dataset": "ols",
+          "rows": 108300,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        },
+        {
+          "status": "pass",
+          "equation": "mp",
+          "year": 2000,
+          "dataset": "ppml",
+          "rows": 114000,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        },
+        {
+          "status": "pass",
+          "equation": "mp",
+          "year": 2019,
+          "dataset": "ppml",
+          "rows": 114000,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        },
+        {
+          "status": "pass",
+          "equation": "mp",
+          "dataset": "ols",
+          "rows": 114000,
+          "max_abs_diff": 0.0,
+          "missing_expected": 0,
+          "missing_actual": 0,
+          "row_rows": 0,
+          "domestic_rows": 0,
+          "keys_match": true
+        }
+      ]
+    }
+  }
+}

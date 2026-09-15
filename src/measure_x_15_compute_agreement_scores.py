@@ -2,12 +2,18 @@ import numpy as np
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
+    agreement_score_inputs,
     assert_impact_label_schema,
+    check_final_weights_provenance,
     detect_old_six_classification_values,
     ensure_directories,
     read_csv,
+    score_provenance_path,
+    score_provenance_record,
     write_csv,
+    write_json,
 )
 
 
@@ -37,8 +43,10 @@ def validate_weights(weights: pd.DataFrame) -> None:
     assert_impact_label_schema(weights, "final_provision_weights.csv")
 
 
+@protected_step(__file__)
 def run() -> None:
     """Compute agreement-level raw trade and investment scores."""
+    check_final_weights_provenance()
     ensure_directories()
     matrix = read_csv(config.AGREEMENT_MATRIX_PATH)
     agreements = read_csv(config.AGREEMENTS_MASTER_PATH)
@@ -185,6 +193,14 @@ def run() -> None:
     out = out[[col for col in first_cols if col in out.columns] + remaining]
 
     write_csv(out, config.AGREEMENT_LEVEL_INDICES_PATH)
+    write_json(
+        score_provenance_record(
+            config.AGREEMENT_LEVEL_INDICES_PATH,
+            agreement_score_inputs(),
+            {"output_float_decimals": config.OUTPUT_FLOAT_DECIMALS},
+        ),
+        score_provenance_path(config.AGREEMENT_LEVEL_INDICES_PATH),
+    )
     print(
         f"Wrote agreement-level raw scores for {len(out):,} agreements "
         f"to {config.AGREEMENT_LEVEL_INDICES_PATH}"
@@ -192,4 +208,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

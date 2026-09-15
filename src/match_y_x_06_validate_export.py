@@ -13,6 +13,8 @@ from match_y_x_common import (
     base_cli_parser,
     check_output_collisions,
     current_git_commit,
+    country_pair_masks,
+    effective_row_policy,
     file_sha256,
     forbidden_y_x_columns,
     load_matching_specs,
@@ -34,6 +36,7 @@ def _validate_dataset(
     x_column: str,
     year: int,
     specs: dict[str, Any],
+    row_policy_audit: dict[str, Any],
 ) -> dict[str, Any]:
     validate_unique(data, Y_KEY, f"{equation} Y-X {year}")
     forbidden = forbidden_y_x_columns(data.columns)
@@ -49,13 +52,18 @@ def _validate_dataset(
     domestic = data["is_domestic_pair"].eq(1)
     if data.loc[domestic, x_column].ne(0).any():
         raise ValueError(f"{equation} domestic {x_column} values must be zero")
-    acceptance = specs.get("acceptance", {}).get(str(year), {})
-    expected_rows = acceptance.get(f"{equation}_rows_after_row_policy")
-    if expected_rows is not None and len(data) != int(expected_rows):
+    expected_rows = row_policy_audit["rows_after"]
+    if len(data) != expected_rows:
         raise ValueError(
             f"{equation} row acceptance failed for {year}: "
             f"expected={expected_rows}, observed={len(data)}"
         )
+    row, domestic = country_pair_masks(data)
+    policy = effective_row_policy(specs)
+    if (policy["drop_row"] and row.any()) or (
+        not policy["keep_domestic"] and domestic.any()
+    ):
+        raise ValueError(f"{equation} Y-X violates the configured row_policy")
     return {
         "equation": equation,
         "year": year,
@@ -68,6 +76,7 @@ def _validate_dataset(
         "dependent_zero_rate": float(data["value"].eq(0).mean()),
         "domestic_rows": int(domestic.sum()),
         "iso_bridge_rows": int(data["uses_iso_bridge"].sum()),
+        "row_policy_audit": row_policy_audit,
     }
 
 
@@ -78,6 +87,7 @@ def _write_year(
     trade: pd.DataFrame,
     mp: pd.DataFrame,
     *,
+    row_policy_audits: dict[str, dict[str, Any]],
     output_root: Path | str | None,
     force: bool,
 ) -> dict[str, Any]:
@@ -92,10 +102,12 @@ def _write_year(
     ]
     check_output_collisions(targets, force)
     trade_diag = _validate_dataset(
-        trade, "trade", specs["equations"]["trade"]["x_column"], year, specs
+        trade, "trade", specs["equations"]["trade"]["x_column"], year, specs,
+        row_policy_audits["trade"],
     )
     mp_diag = _validate_dataset(
-        mp, "mp", specs["equations"]["mp"]["x_column"], year, specs
+        mp, "mp", specs["equations"]["mp"]["x_column"], year, specs,
+        row_policy_audits["mp"],
     )
     write_csv_dta(trade, paths["trade_csv"], paths["trade_dta"])
     write_csv_dta(mp, paths["mp_csv"], paths["mp_dta"])
@@ -141,15 +153,16 @@ def _write_year(
         },
         "input_sha256": {name: file_sha256(path) for name, path in inputs.items()},
         "input_rows": {
-            "trade": trade_diag["rows"],
-            "mp": mp_diag["rows"],
+            "trade": row_policy_audits["trade"]["rows_before"],
+            "mp": row_policy_audits["mp"]["rows_before"],
         },
         "input_columns": {
             "trade": trade_diag["columns"],
             "mp": mp_diag["columns"],
         },
         "merge_keys": ["year", "iso_o_match", "iso_d_match"],
-        "row_policy": specs["row_policy"],
+        "row_policy": effective_row_policy(specs),
+        "row_policy_audit": row_policy_audits,
         "iso_aliases": specs["iso_aliases"],
         "output_rows": {"trade": len(trade), "mp": len(mp)},
         "output_sha256": {
@@ -242,12 +255,14 @@ def run(
     results: dict[str, Any] = {"pipeline": "match_y_x", "years": {}}
     for year in selected_years:
         x_data = prepare_x.prepare_x(root, specs, year)
+        trade_y = prepare_y.prepare_y(root, specs, "trade", year)
+        mp_y = prepare_y.prepare_y(root, specs, "mp", year)
         trade = build_trade.build_trade(
-            prepare_y.prepare_y(root, specs, "trade", year),
+            trade_y,
             x_data,
         )
         mp = build_mp.build_mp(
-            prepare_y.prepare_y(root, specs, "mp", year),
+            mp_y,
             x_data,
         )
         results["years"][str(year)] = _write_year(
@@ -256,6 +271,10 @@ def run(
             year,
             trade,
             mp,
+            row_policy_audits={
+                "trade": trade_y.attrs["row_policy_audit"],
+                "mp": mp_y.attrs["row_policy_audit"],
+            },
             output_root=output_root,
             force=force,
         )

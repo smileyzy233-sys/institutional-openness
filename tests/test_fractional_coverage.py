@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import config
-from conftest import load_script
+from conftest import load_script, write_stage1_success_manifest
 from utils import read_csv, write_csv
 
 
@@ -50,6 +50,19 @@ def test_loader_rejects_out_of_range_coverage() -> None:
 
 
 def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline) -> None:
+    provisions = pd.DataFrame(
+        {"provision_id": ["P0001", "P0002"], "provision_text": ["First", "Second"]}
+    )
+    write_csv(provisions, config.PROVISIONS_MASTER_PATH)
+    stage1_hash = write_stage1_success_manifest(
+        pd.DataFrame(
+            {
+                "provision_id": ["P0001", "P0002"],
+                "final_is_institutional_opening": [1, 1],
+                "final_dominant_dimension": ["rules", "standards"],
+            }
+        )
+    )
     write_csv(
         pd.DataFrame(
             {
@@ -79,6 +92,8 @@ def test_agreement_indices_report_any_full_and_fractional_coverage(temp_pipeline
                 "final_impact_type": ["both", "both"],
                 "effective_trade_weight": [0.8, 0.3],
                 "effective_mp_weight": [0.2, 0.7],
+                "stage1_final_sha256": [stage1_hash, stage1_hash],
+                "final_unresolved": [False, False],
                 "pipeline_schema_version": [
                     config.PIPELINE_SCHEMA_VERSION,
                     config.PIPELINE_SCHEMA_VERSION,

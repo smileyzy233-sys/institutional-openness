@@ -10,6 +10,7 @@ import pandas as pd
 
 import config
 from match_y_x_common import normalize_iso3 as shared_normalize_iso3
+from pipeline_safety import protected_step, step_cli
 from utils import (
     assert_impact_label_schema,
     ensure_directories,
@@ -911,6 +912,7 @@ def validate_outputs(
     ) == 0
 
 
+@protected_step(__file__)
 def run() -> None:
     ensure_directories()
     validate_country_pair_input()
@@ -994,4 +996,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

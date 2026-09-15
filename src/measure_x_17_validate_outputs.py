@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     as_bool_series,
     assert_impact_label_schema,
@@ -71,6 +72,7 @@ def final_quality(final: pd.DataFrame, provisions: pd.DataFrame) -> dict[str, An
     }
 
 
+@protected_step(__file__)
 def run() -> None:
     ensure_directories()
     provisions = safe_csv(config.PROVISIONS_MASTER_PATH)
@@ -250,4 +252,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

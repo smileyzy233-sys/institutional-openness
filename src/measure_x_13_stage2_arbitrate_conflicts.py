@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step
 from utils import (
     assert_impact_label_schema,
     call_provider,
@@ -257,6 +258,7 @@ def empty_outputs() -> None:
     )
 
 
+@protected_step(__file__)
 def run(
     *,
     provider: str | None = None,
@@ -288,8 +290,6 @@ def run(
     queue["review_context_hash"] = queue.apply(context_hash_for_row, axis=1)
     template, prompt_sha256 = ensure_prompt(resolve_project_path(prompt_path))
 
-    if not resume and config.STAGE2_ARBITRATION_RESULTS_PATH.exists():
-        config.STAGE2_ARBITRATION_RESULTS_PATH.unlink()
     existing = (
         read_csv(config.STAGE2_ARBITRATION_RESULTS_PATH)
         if resume and config.STAGE2_ARBITRATION_RESULTS_PATH.exists()
@@ -397,14 +397,17 @@ def main() -> None:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     run(
         provider=args.provider,
         model_name=args.model,
         base_url=args.base_url,
         prompt_path=args.prompt_path,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
+        force=args.force,
+        dry_run=args.dry_run,
     )
 
 

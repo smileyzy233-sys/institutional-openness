@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step, step_cli
 from utils import (
     check_stage1_gate,
     detect_old_six_classification_values,
@@ -235,6 +236,7 @@ def write_single_model_interim_files(
     write_csv(pd.DataFrame(columns=manual_cols), config.STAGE2_MANUAL_REVIEW_QUEUE_PATH)
 
 
+@protected_step(__file__)
 def run(*, model_role: str = "B") -> None:
     model_role = str(model_role or "B").strip().upper()
     if model_role not in {"A", "B"}:
@@ -396,4 +398,4 @@ def run(*, model_role: str = "B") -> None:
 
 
 if __name__ == "__main__":
-    run()
+    step_cli(run)

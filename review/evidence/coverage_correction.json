@@ -1,0 +1,9 @@
+{
+  "comparison": "historical binary rule (original workbook numeric value == 1) versus coded workbook with blank=0",
+  "provisions": 1071,
+  "agreements": 400,
+  "different_coverage_cells": 4097,
+  "coded_partial_coverage_cells": 1970,
+  "coded_blank_cells": 39284,
+  "note": "Read-only counterfactual comparison of coverage; this does not regenerate historical outputs or regression estimates."
+}

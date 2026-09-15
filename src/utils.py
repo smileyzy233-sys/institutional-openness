@@ -1053,6 +1053,74 @@ def _assert_id_set(label: str, frame: pd.DataFrame, expected: pd.Series) -> None
         raise RuntimeError(f"{label} 门控失败：provision_id 集合不一致")
 
 
+def _approved_master_compatibility(current_hash: str) -> bool:
+    """Accept only the exact files covered by a recorded, text-equivalent audit."""
+    stages = (
+        (config.STAGE1A_MANIFEST_PATH, config.STAGE1A_FINAL_CLASSIFICATION_PATH, "stage1a_final_sha256"),
+        (config.STAGE1B_MANIFEST_PATH, config.STAGE1B_FINAL_CLASSIFICATION_PATH, "stage1b_final_sha256"),
+        (config.STAGE1_MANIFEST_PATH, config.STAGE1_FINAL_CLASSIFICATION_PATH, "stage1_final_sha256"),
+    )
+    for path in sorted(config.MANIFEST_DIR.glob("measurement_compatibility_*.json")):
+        try:
+            record = read_json(path)
+            if (
+                record.get("record_type") != "documentation_only_compatibility_audit"
+                or not record.get("authorization")
+                or record.get("current_provisions_master_sha256") != current_hash
+                or record.get("id_set_matches") is not True
+                or record.get("final_provision_weights_sha256")
+                != sha256_file(config.FINAL_PROVISION_WEIGHTS_PATH)
+            ):
+                continue
+            comparisons = record.get("text_comparison", {})
+            if any(
+                comparisons.get(column, {}).get("mismatches_after_crlf_to_lf") != 0
+                for column in ("policy_area", "original_coding", "provision_text")
+            ):
+                continue
+            if record.get("provision_count") != len(read_csv(config.PROVISIONS_MASTER_PATH)):
+                continue
+            preserved = {
+                str(item["path"]).replace("\\", "/"): item
+                for item in record.get("historical_manifests_preserved", [])
+            }
+            valid = True
+            for manifest_path, final_path, final_key in stages:
+                relative = manifest_path.relative_to(config.PROJECT_ROOT).as_posix()
+                evidence = preserved.get(relative, {})
+                manifest = read_json(manifest_path)
+                if (
+                    evidence.get("sha256") != sha256_file(manifest_path)
+                    or not evidence.get("historical_provisions_master_sha256")
+                    or evidence.get("historical_provisions_master_sha256")
+                    != manifest.get("provisions_master_sha256")
+                    or manifest.get(final_key) != sha256_file(final_path)
+                    or record.get("historical_classification_output_hashes_match_current", {}).get(final_key)
+                    is not True
+                ):
+                    valid = False
+                    break
+            if valid:
+                return True
+        except (OSError, ValueError, KeyError, TypeError):
+            # A missing or malformed audit never grants compatibility.
+            continue
+    return False
+
+
+def _check_provisions_manifest(manifest: dict[str, Any], label: str) -> None:
+    current_hash = sha256_file(config.PROVISIONS_MASTER_PATH)
+    if manifest.get("provisions_master_sha256") == current_hash:
+        return
+    if _approved_master_compatibility(current_hash):
+        return
+    raise RuntimeError(
+        f"{label} 门控失败：provisions_master_sha256 与当前条款主表不匹配或缺失；"
+        "请重新完成分类，或提供精确覆盖当前主表、历史分类清单和权重的兼容审计。"
+        "已有兼容记录不能用于放行后来改变的输入或权重。"
+    )
+
+
 def check_stage1a_gate() -> dict[str, Any]:
     if not config.STAGE1A_SUCCESS_PATH.exists():
         raise RuntimeError(f"Stage 1A 门控失败：缺少 {config.STAGE1A_SUCCESS_PATH}")
@@ -1065,6 +1133,7 @@ def check_stage1a_gate() -> dict[str, Any]:
     manifest = read_json(config.STAGE1A_MANIFEST_PATH)
     if manifest.get("pipeline_schema_version") != config.PIPELINE_SCHEMA_VERSION:
         raise RuntimeError("Stage 1A 门控失败：manifest schema version 不匹配")
+    _check_provisions_manifest(manifest, "Stage 1A")
     _check_hash_in_manifest(
         config.STAGE1A_FINAL_CLASSIFICATION_PATH,
         manifest,
@@ -1100,6 +1169,7 @@ def check_stage1b_gate() -> dict[str, Any]:
     manifest = read_json(config.STAGE1B_MANIFEST_PATH)
     if manifest.get("pipeline_schema_version") != config.PIPELINE_SCHEMA_VERSION:
         raise RuntimeError("Stage 1B 门控失败：manifest schema version 不匹配")
+    _check_provisions_manifest(manifest, "Stage 1B")
     if manifest.get("stage1a_final_sha256") != stage1a_hash:
         raise RuntimeError("Stage 1B 门控失败：stage1a_final_sha256 已失效")
     _check_hash_in_manifest(
@@ -1143,6 +1213,7 @@ def check_stage1_gate() -> dict[str, Any]:
     manifest = read_json(config.STAGE1_MANIFEST_PATH)
     if manifest.get("pipeline_schema_version") != config.PIPELINE_SCHEMA_VERSION:
         raise RuntimeError("第一阶段门控失败：manifest schema version 不匹配")
+    _check_provisions_manifest(manifest, "第一阶段")
     final_hash = sha256_file(config.STAGE1_FINAL_CLASSIFICATION_PATH)
     if final_hash != manifest.get("stage1_final_sha256"):
         raise RuntimeError("第一阶段门控失败：stage1_final_classification.csv 哈希不匹配")
@@ -1176,6 +1247,184 @@ def check_stage1_gate() -> dict[str, Any]:
     manifest.setdefault("stage1a_manifest", stage1a_manifest)
     manifest.setdefault("stage1b_manifest", stage1b_manifest)
     return manifest
+
+
+def weight_classification_baseline_record(*, basis: str) -> dict[str, Any]:
+    """Freeze a checked legacy binding without changing its embedded old hash."""
+    if not basis:
+        raise ValueError("A read-only weight baseline requires an audit basis")
+    final = read_csv(config.STAGE1_FINAL_CLASSIFICATION_PATH)
+    weights = read_csv(config.FINAL_PROVISION_WEIGHTS_PATH, dtype={"stage1_final_sha256": str})
+    _assert_id_set("权重兼容基线", weights, final["provision_id"])
+    if not final["provision_id"].is_unique:
+        raise RuntimeError("权重兼容基线失败：分类 provision_id 重复。")
+    columns = ["final_is_institutional_opening", "final_dominant_dimension"]
+    for stage in ("stage1a", "stage1b", "stage1"):
+        columns.extend(
+            f"{stage}_{suffix}" for suffix in (
+                "decision_source", "resolution_method", "final_reason", "was_arbitrated",
+                "was_human_reviewed", "unresolved",
+            )
+        )
+    columns.extend(
+        ["stage1a_final_sha256", "stage1b_final_sha256", "provision_order", "policy_area", "original_coding", "provision_text"]
+    )
+    if any(column not in final or column not in weights for column in columns):
+        raise RuntimeError("权重兼容基线失败：缺少完整分类比较字段。")
+    final = final.assign(provision_id=final["provision_id"].astype(str)).set_index("provision_id")
+    weights = weights.assign(provision_id=weights["provision_id"].astype(str)).set_index("provision_id").loc[final.index]
+    mismatches = {}
+    for column in columns:
+        left = final[column].fillna("").astype(str)
+        right = weights[column].fillna("").astype(str)
+        if column == "provision_text":
+            left = left.str.replace("\r\n", "\n", regex=False)
+            right = right.str.replace("\r\n", "\n", regex=False)
+        mismatches[column] = int(left.ne(right).sum())
+    if any(mismatches.values()):
+        raise RuntimeError("权重兼容基线失败：权重保留的分类与当前分类存在实质差异。")
+    if "stage1_final_sha256" not in weights:
+        raise RuntimeError("权重兼容基线失败：缺少嵌入的分类哈希。")
+    embedded = sorted(weights["stage1_final_sha256"].fillna("").astype(str).unique().tolist())
+    if len(embedded) != 1 or re.fullmatch(r"[0-9a-f]{64}", embedded[0]) is None:
+        raise RuntimeError("权重兼容基线失败：嵌入的分类哈希不唯一或无效。")
+    return {
+        "schema_version": 1,
+        "record_type": "frozen_weight_classification_baseline",
+        "pipeline_executed": False,
+        "recorded_at": utc_timestamp(),
+        "basis": basis,
+        "provisions_master_sha256": sha256_file(config.PROVISIONS_MASTER_PATH),
+        "final_provision_weights_sha256": sha256_file(config.FINAL_PROVISION_WEIGHTS_PATH),
+        "embedded_stage1_final_sha256": embedded,
+        "classification_files": {
+            name: sha256_file(path) for name, path in {
+                "stage1a_final": config.STAGE1A_FINAL_CLASSIFICATION_PATH,
+                "stage1b_final": config.STAGE1B_FINAL_CLASSIFICATION_PATH,
+                "stage1_final": config.STAGE1_FINAL_CLASSIFICATION_PATH,
+                "stage1a_manifest": config.STAGE1A_MANIFEST_PATH,
+                "stage1b_manifest": config.STAGE1B_MANIFEST_PATH,
+                "stage1_manifest": config.STAGE1_MANIFEST_PATH,
+            }.items()
+        },
+        "classification_comparison": {
+            "row_count": len(final),
+            "id_set_matches": True,
+            "crlf_normalized_columns": ["provision_text"],
+            "mismatches": mismatches,
+        },
+    }
+
+
+def _approved_weight_classification_compatibility() -> bool:
+    path = score_provenance_path(config.FINAL_PROVISION_WEIGHTS_PATH)
+    if not path.exists():
+        return False
+    try:
+        record = read_json(path)
+        expected = weight_classification_baseline_record(basis=record.get("basis", ""))
+        return all(record.get(key) == value for key, value in expected.items() if key != "recorded_at")
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError):
+        return False
+
+
+def check_final_weights_provenance() -> None:
+    """Reject weights made for a different classification before calculating X."""
+    check_stage1_gate()
+    weights = read_csv(config.FINAL_PROVISION_WEIGHTS_PATH, dtype={"stage1_final_sha256": str})
+    final = read_csv(config.STAGE1_FINAL_CLASSIFICATION_PATH)
+    _assert_id_set("最终权重", weights, final["provision_id"])
+    final_hash = sha256_file(config.STAGE1_FINAL_CLASSIFICATION_PATH)
+    if "stage1_final_sha256" not in weights or not weights["stage1_final_sha256"].eq(final_hash).all():
+        if not _approved_weight_classification_compatibility():
+            raise RuntimeError(
+                "最终权重门控失败：stage1_final_sha256 缺失或不对应当前分类；"
+                "请先重新完成赋权，或提供精确绑定现有权重与分类逐列核验的只读兼容基线。"
+            )
+    if "final_unresolved" not in weights or as_bool_series(weights["final_unresolved"]).any():
+        raise RuntimeError("最终权重门控失败：缺少 final_unresolved 或仍有未解决条款。")
+    expected = final.assign(provision_id=final["provision_id"].astype(str)).set_index("provision_id")
+    actual = weights.assign(provision_id=weights["provision_id"].astype(str)).set_index("provision_id").loc[expected.index]
+    for column in ("final_is_institutional_opening", "final_dominant_dimension"):
+        if column not in actual:
+            raise RuntimeError(f"最终权重门控失败：缺少 {column}。")
+        if column == "final_is_institutional_opening":
+            matches = pd.to_numeric(actual[column], errors="coerce").eq(
+                pd.to_numeric(expected[column], errors="coerce")
+            )
+        else:
+            matches = actual[column].astype(str).str.lower().eq(expected[column].astype(str).str.lower())
+        if not matches.all():
+            raise RuntimeError(f"最终权重门控失败：{column} 与当前分类不一致。")
+
+
+def agreement_score_inputs() -> dict[str, Path]:
+    return {
+        "provisions_master": config.PROVISIONS_MASTER_PATH,
+        "stage1_final_classification": config.STAGE1_FINAL_CLASSIFICATION_PATH,
+        "final_provision_weights": config.FINAL_PROVISION_WEIGHTS_PATH,
+        "agreement_matrix": config.AGREEMENT_MATRIX_PATH,
+        "agreements_master": config.AGREEMENTS_MASTER_PATH,
+    }
+
+
+def score_provenance_path(output: Path) -> Path:
+    return output.with_suffix(".provenance.json")
+
+
+def score_provenance_record(
+    output: Path,
+    inputs: dict[str, Path],
+    parameters: dict[str, Any],
+    *,
+    record_type: str = "generated_score_provenance",
+) -> dict[str, Any]:
+    """Describe generated scores or an explicitly labelled, read-only baseline."""
+    if record_type not in {"generated_score_provenance", "frozen_input_baseline"}:
+        raise ValueError(f"Unsupported score provenance record type: {record_type}")
+    return {
+        "schema_version": 1,
+        "record_type": record_type,
+        "pipeline_executed": record_type == "generated_score_provenance",
+        "recorded_at": utc_timestamp(),
+        "pipeline_schema_version": config.PIPELINE_SCHEMA_VERSION,
+        "impact_label_schema_version": config.IMPACT_LABEL_SCHEMA_VERSION,
+        "coverage_matrix_schema_version": config.COVERAGE_MATRIX_SCHEMA_VERSION,
+        "output_sha256": sha256_file(output),
+        "inputs": {name: sha256_file(path) for name, path in inputs.items()},
+        "parameters": parameters,
+    }
+
+
+def check_agreement_score_provenance() -> None:
+    output = config.AGREEMENT_LEVEL_INDICES_PATH
+    path = score_provenance_path(output)
+    if not path.exists():
+        raise RuntimeError(
+            f"协定指标门控失败：缺少输入版本记录 {path.name}；"
+            "请先运行协定指标步骤，或为已核验的现有产物建立明确标注的只读基线。"
+        )
+    record = read_json(path)
+    record_type = record.get("record_type")
+    if record_type not in {"generated_score_provenance", "frozen_input_baseline"}:
+        raise RuntimeError("协定指标门控失败：无法识别输入版本记录类型。")
+    if record_type == "frozen_input_baseline" and not record.get("basis"):
+        raise RuntimeError("协定指标门控失败：只读基线缺少核验依据。")
+    expected = score_provenance_record(
+        output,
+        agreement_score_inputs(),
+        {"output_float_decimals": config.OUTPUT_FLOAT_DECIMALS},
+        record_type=record_type,
+    )
+    for key in (
+        "schema_version", "pipeline_executed", "pipeline_schema_version",
+        "impact_label_schema_version", "coverage_matrix_schema_version",
+        "output_sha256", "inputs", "parameters",
+    ):
+        if record.get(key) != expected[key]:
+            raise RuntimeError(
+                f"协定指标门控失败：{key} 与当前文件或配置不一致；请先重新计算协定指标。"
+            )
 
 
 def write_table_manifest() -> None:

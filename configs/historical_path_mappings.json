@@ -1,0 +1,21 @@
+{
+  "description": "Historical references are preserved verbatim; this table resolves their relocated files. Current matching output is configured separately.",
+  "relocations": [
+    {
+      "source": "result/model_inputs",
+      "target": "../project_archive/dta_institutional_opening/matching_history/20260915_before_outputs_rename/model_inputs"
+    },
+    {
+      "source": "result/refactor_baseline",
+      "target": "../project_archive/dta_institutional_opening/matching_history/20260915_before_outputs_rename/refactor_baseline"
+    },
+    {
+      "source": "result/regression_2019",
+      "target": "../project_archive/dta_institutional_opening/matching_history/20260915_before_outputs_rename/regression_2019"
+    },
+    {
+      "source": "result/model_inputs_fractional_20260914",
+      "target": "outputs/matched_data"
+    }
+  ]
+}

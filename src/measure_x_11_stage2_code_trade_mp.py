@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 
 import config
+from pipeline_safety import protected_step
 from utils import (
     call_provider,
     check_stage1_gate,
@@ -267,6 +268,7 @@ def existing_ok_ids(
     return set(existing.loc[mask, "provision_id"].astype(str))
 
 
+@protected_step(__file__)
 def run(
     *,
     model_role: str = "A",
@@ -305,8 +307,6 @@ def run(
         for _, row in eligible.iterrows()
     }
 
-    if not resume and output_path.exists():
-        output_path.unlink()
     completed_ids = existing_ok_ids(
         output_path,
         model_role=model_role,
@@ -421,6 +421,7 @@ def main() -> None:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     run(
         model_role=args.model_role,
@@ -429,8 +430,10 @@ def main() -> None:
         base_url=args.base_url,
         output_path=args.output,
         prompt_path=args.prompt_path,
-        resume=args.resume and not args.force,
+        resume=args.resume,
         limit=args.limit,
+        force=args.force,
+        dry_run=args.dry_run,
     )
 
 

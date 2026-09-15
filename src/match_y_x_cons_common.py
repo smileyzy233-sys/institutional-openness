@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,9 @@ from match_y_x_common import (
     GRAVITY_TRADE_CONTROL_COLUMNS,
     X_KEY,
     Y_KEY,
+    country_pair_masks,
+    effective_row_policy,
+    file_sha256,
     require_columns,
     resolve_output_root,
     validate_unique,
@@ -68,6 +72,50 @@ def control_output_paths(
     }
 
 
+def validate_y_x_policy(
+    project_dir: Path,
+    specs: dict[str, Any],
+    equation: str,
+    year: int,
+    output_root: Path | str | None = None,
+) -> dict[str, Any]:
+    """Require evidence that an existing Y-X base uses the requested sample policy."""
+    paths = y_x_output_paths(project_dir, specs, year, output_root)
+    path = paths[f"{equation}_csv"]
+    manifest_path = paths["manifest"]
+    rebuild = (
+        "Rebuild required / 需要重新构建 Y-X：先运行 `python run_pipeline.py "
+        f"match-y-x --years {year} --output-root <new-version-root>`，"
+        "再以同一 output-root 匹配控制变量。不会自动覆盖旧数据；--force 不能绕过配置检查。"
+    )
+    if not path.exists():
+        raise FileNotFoundError(f"Missing {equation} Y-X input: {path}. {rebuild}")
+    if not manifest_path.exists():
+        raise ValueError(f"Y-X build manifest is missing: {manifest_path}. {rebuild}")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    except (ValueError, OSError) as exc:
+        raise ValueError(f"Cannot read Y-X manifest: {manifest_path}. {rebuild}") from exc
+    if not isinstance(manifest, dict):
+        raise ValueError(f"Y-X manifest must be an object: {manifest_path}. {rebuild}")
+    recorded = manifest.get("row_policy", {})
+    if not isinstance(recorded, dict) or any(
+        type(recorded.get(key)) is not bool for key in ("drop_row", "keep_domestic")
+    ):
+        raise ValueError(f"Y-X manifest lacks an explicit row_policy. {rebuild}")
+    requested = effective_row_policy(specs)
+    if effective_row_policy(manifest) != requested:
+        raise ValueError(
+            f"Y-X row_policy mismatch: recorded={recorded}, requested={requested}; "
+            f"input={path}. {rebuild}"
+        )
+    if manifest.get("year") != year or manifest.get("iso_aliases") != specs["iso_aliases"]:
+        raise ValueError(f"Y-X year or ISO alias configuration mismatch: {path}. {rebuild}")
+    if manifest.get("output_sha256", {}).get(f"{equation}_csv") != file_sha256(path):
+        raise ValueError(f"Y-X CSV SHA256 does not match its manifest: {path}. {rebuild}")
+    return manifest
+
+
 def read_y_x_base(
     project_dir: Path,
     specs: dict[str, Any],
@@ -75,14 +123,9 @@ def read_y_x_base(
     year: int,
     output_root: Path | str | None = None,
 ) -> tuple[pd.DataFrame, Path]:
+    manifest = validate_y_x_policy(project_dir, specs, equation, year, output_root)
     paths = y_x_output_paths(project_dir, specs, year, output_root)
     path = paths[f"{equation}_csv"]
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Missing {equation} Y-X input for {year}: {path}. "
-            "Run `python run_pipeline.py match-y-x --years "
-            f"{year}` first."
-        )
     data = pd.read_csv(path, low_memory=False)
     require_columns(
         data.columns,
@@ -92,6 +135,17 @@ def read_y_x_base(
         str(path),
     )
     validate_unique(data, Y_KEY, path.name)
+    row, domestic = country_pair_masks(data)
+    policy = effective_row_policy(specs)
+    if (policy["drop_row"] and row.any()) or (
+        not policy["keep_domestic"] and domestic.any()
+    ):
+        raise ValueError(
+            f"Y-X data violates its row_policy: {path}. Rebuild required / "
+            "需要重新构建 Y-X；控制变量步骤不补删基表行。"
+        )
+    if manifest.get("output_rows", {}).get(equation) != len(data):
+        raise ValueError(f"Y-X row count differs from its manifest: {path}. Rebuild required")
     return data, path
 
 
